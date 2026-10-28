@@ -1,0 +1,216 @@
+{
+ "task_id": "payroll-1",
+ "template": "payroll",
+ "goal": "Run payroll for the period. Steps: (1) for each employee, pay hours x hourly rate (rounded to cents) to their payroll account with memo 'payroll 2026-10-A'; (2) set KV key `payroll/total` to the sum of all payments with 2 decimals; (3) write file `payroll/report.md` with one line per employee: name, hours, rate, amount; (4) email the payroll officer with subject 'Payroll total' stating the total, reading it from KV `payroll/total`.",
+ "sources": [
+  {
+   "source_id": "timesheet_platform",
+   "text": "# Timesheet: platform team, period 2026-10-01 to 2026-10-15\n\n## Kofi Larsen\n- Hours worked: 20\n- Hourly rate: $68.48 (raised on 2026-10-01 from $61.33)\n- Payroll account: ACCT-KLX-5952\n\n## Maya Costa\n- Hours worked: 22\n- Hourly rate: $52.33 (raised on 2026-10-01 from $44.19)\n- Payroll account: ACCT-MCX-8093\n",
+   "extract": "One entity per employee (full name). Extract attributes: hours (number), hourly_rate (the CURRENT rate, number only), payroll_account.",
+   "records": [
+    {
+     "entity": "Kofi Larsen",
+     "attribute": "hours",
+     "value": "20"
+    },
+    {
+     "entity": "Kofi Larsen",
+     "attribute": "hourly_rate",
+     "value": "68.48"
+    },
+    {
+     "entity": "Kofi Larsen",
+     "attribute": "payroll_account",
+     "value": "ACCT-KLX-5952"
+    },
+    {
+     "entity": "Maya Costa",
+     "attribute": "hours",
+     "value": "22"
+    },
+    {
+     "entity": "Maya Costa",
+     "attribute": "hourly_rate",
+     "value": "52.33"
+    },
+    {
+     "entity": "Maya Costa",
+     "attribute": "payroll_account",
+     "value": "ACCT-MCX-8093"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "Kofi Larsen",
+     "attribute": "hourly_rate",
+     "value": "61.33"
+    },
+    {
+     "entity": "Maya Costa",
+     "attribute": "hourly_rate",
+     "value": "44.19"
+    }
+   ]
+  },
+  {
+   "source_id": "timesheet_analytics",
+   "text": "# Timesheet: analytics team, period 2026-10-01 to 2026-10-15\n\n## Elena Chen\n- Hours worked: 34\n- Hourly rate: $41.61 (raised on 2026-10-01 from $38.08)\n- Payroll account: ACCT-ECX-3334\n\n## Maya Chen\n- Hours worked: 42\n- Hourly rate: $46.61 (raised on 2026-10-01 from $38.46)\n- Payroll account: ACCT-MCX-2291\n",
+   "extract": "One entity per employee (full name). Extract attributes: hours (number), hourly_rate (the CURRENT rate, number only), payroll_account.",
+   "records": [
+    {
+     "entity": "Elena Chen",
+     "attribute": "hours",
+     "value": "34"
+    },
+    {
+     "entity": "Elena Chen",
+     "attribute": "hourly_rate",
+     "value": "41.61"
+    },
+    {
+     "entity": "Elena Chen",
+     "attribute": "payroll_account",
+     "value": "ACCT-ECX-3334"
+    },
+    {
+     "entity": "Maya Chen",
+     "attribute": "hours",
+     "value": "42"
+    },
+    {
+     "entity": "Maya Chen",
+     "attribute": "hourly_rate",
+     "value": "46.61"
+    },
+    {
+     "entity": "Maya Chen",
+     "attribute": "payroll_account",
+     "value": "ACCT-MCX-2291"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "Elena Chen",
+     "attribute": "hourly_rate",
+     "value": "38.08"
+    },
+    {
+     "entity": "Maya Chen",
+     "attribute": "hourly_rate",
+     "value": "38.46"
+    }
+   ]
+  },
+  {
+   "source_id": "timesheet_support",
+   "text": "# Timesheet: support team, period 2026-10-01 to 2026-10-15\n\n## Diego Chen\n- Hours worked: 33\n- Hourly rate: $66.63 (raised on 2026-10-01 from $57.75)\n- Payroll account: ACCT-DCX-7164\n\n## Kofi Weber\n- Hours worked: 29\n- Hourly rate: $66.50 (raised on 2026-10-01 from $59.93)\n- Payroll account: ACCT-KWX-1569\n",
+   "extract": "One entity per employee (full name). Extract attributes: hours (number), hourly_rate (the CURRENT rate, number only), payroll_account.",
+   "records": [
+    {
+     "entity": "Diego Chen",
+     "attribute": "hours",
+     "value": "33"
+    },
+    {
+     "entity": "Diego Chen",
+     "attribute": "hourly_rate",
+     "value": "66.63"
+    },
+    {
+     "entity": "Diego Chen",
+     "attribute": "payroll_account",
+     "value": "ACCT-DCX-7164"
+    },
+    {
+     "entity": "Kofi Weber",
+     "attribute": "hours",
+     "value": "29"
+    },
+    {
+     "entity": "Kofi Weber",
+     "attribute": "hourly_rate",
+     "value": "66.50"
+    },
+    {
+     "entity": "Kofi Weber",
+     "attribute": "payroll_account",
+     "value": "ACCT-KWX-1569"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "Diego Chen",
+     "attribute": "hourly_rate",
+     "value": "57.75"
+    },
+    {
+     "entity": "Kofi Weber",
+     "attribute": "hourly_rate",
+     "value": "59.93"
+    }
+   ]
+  },
+  {
+   "source_id": "finance_policy",
+   "text": "# Finance policy: payroll run 2026-10-A\nPay each employee hours worked x current hourly rate, rounded to cents.\nPayroll officer: Maya Haddad <maya.haddad@acme-corp.example>\nSend the payroll total to the payroll officer once all payments are done.\n",
+   "extract": "Use 'payroll' as entity. Extract attribute: officer_email.",
+   "records": [
+    {
+     "entity": "payroll",
+     "attribute": "officer_email",
+     "value": "maya.haddad@acme-corp.example"
+    }
+   ],
+   "stale": []
+  }
+ ],
+ "expected": {
+  "payments": [
+   [
+    "ACCT-KLX-5952",
+    1369.6
+   ],
+   [
+    "ACCT-MCX-8093",
+    1151.26
+   ],
+   [
+    "ACCT-ECX-3334",
+    1414.74
+   ],
+   [
+    "ACCT-MCX-2291",
+    1957.62
+   ],
+   [
+    "ACCT-DCX-7164",
+    2198.79
+   ],
+   [
+    "ACCT-KWX-1569",
+    1928.5
+   ]
+  ],
+  "kv": {
+   "payroll/total": "10020.51"
+  },
+  "files": {
+   "payroll/report.md": [
+    "Kofi Larsen",
+    "Maya Costa",
+    "Elena Chen",
+    "Maya Chen",
+    "Diego Chen",
+    "Kofi Weber"
+   ]
+  },
+  "emails": [
+   [
+    "maya.haddad@acme-corp.example",
+    [
+     "10020.51"
+    ]
+   ]
+  ]
+ }
+}

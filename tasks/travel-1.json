@@ -1,0 +1,171 @@
+{
+ "task_id": "travel-1",
+ "template": "travel",
+ "goal": "Book a trip to Osaka. Steps: (1) pay the cheapest flight's fare to its billing account (memo 'flight booking'); (2) pay the cheapest hotel nightly rate x nights to its billing account (memo 'hotel booking'); (3) set KV key `trip/total` to flight fare + hotel cost with 2 decimals; (4) write file `trips/itinerary.md` with the flight code, hotel name, nights and total; (5) email the traveler with subject 'Trip itinerary' naming the flight code and hotel and stating the total, reading the total from KV `trip/total`.",
+ "sources": [
+  {
+   "source_id": "flights",
+   "text": "# Flight options to Osaka (economy, round trip)\n\n## Flight SK309 (SkyBridge Air)\n- Fare: $574.64 (fare drop on 2026-10-22; was $693.58)\n- Billing account: ACCT-SAX-1731\n\n## Flight NO481 (Northwind Airlines)\n- Fare: $607.01 (fare drop on 2026-10-22; was $697.82)\n- Billing account: ACCT-NAX-5175\n\n## Flight ME452 (Meridian Air)\n- Fare: $1203.73 (fare drop on 2026-10-22; was $1321.39)\n- Billing account: ACCT-MAX-6109\n",
+   "extract": "One entity per flight (use the flight code, e.g. AB123). Extract attributes: fare (the CURRENT fare, number only), billing_account.",
+   "records": [
+    {
+     "entity": "SK309",
+     "attribute": "fare",
+     "value": "574.64"
+    },
+    {
+     "entity": "SK309",
+     "attribute": "billing_account",
+     "value": "ACCT-SAX-1731"
+    },
+    {
+     "entity": "NO481",
+     "attribute": "fare",
+     "value": "607.01"
+    },
+    {
+     "entity": "NO481",
+     "attribute": "billing_account",
+     "value": "ACCT-NAX-5175"
+    },
+    {
+     "entity": "ME452",
+     "attribute": "fare",
+     "value": "1203.73"
+    },
+    {
+     "entity": "ME452",
+     "attribute": "billing_account",
+     "value": "ACCT-MAX-6109"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "SK309",
+     "attribute": "fare",
+     "value": "693.58"
+    },
+    {
+     "entity": "NO481",
+     "attribute": "fare",
+     "value": "697.82"
+    },
+    {
+     "entity": "ME452",
+     "attribute": "fare",
+     "value": "1321.39"
+    }
+   ]
+  },
+  {
+   "source_id": "hotels",
+   "text": "# Hotel options in Osaka\n\n## Pine Court Hotel\n- Nightly rate: $125.80 (season rate from 2026-10-15; off-season $98.42)\n- Billing account: ACCT-PCH-3716\n\n## The Linden\n- Nightly rate: $234.63 (season rate from 2026-10-15; off-season $215.49)\n- Billing account: ACCT-TLX-5084\n\n## Atlas Suites\n- Nightly rate: $265.72 (season rate from 2026-10-15; off-season $238.09)\n- Billing account: ACCT-ASX-4412\n",
+   "extract": "One entity per hotel (hotel name). Extract attributes: nightly_rate (the CURRENT season rate, number only), billing_account.",
+   "records": [
+    {
+     "entity": "Pine Court Hotel",
+     "attribute": "nightly_rate",
+     "value": "125.80"
+    },
+    {
+     "entity": "Pine Court Hotel",
+     "attribute": "billing_account",
+     "value": "ACCT-PCH-3716"
+    },
+    {
+     "entity": "The Linden",
+     "attribute": "nightly_rate",
+     "value": "234.63"
+    },
+    {
+     "entity": "The Linden",
+     "attribute": "billing_account",
+     "value": "ACCT-TLX-5084"
+    },
+    {
+     "entity": "Atlas Suites",
+     "attribute": "nightly_rate",
+     "value": "265.72"
+    },
+    {
+     "entity": "Atlas Suites",
+     "attribute": "billing_account",
+     "value": "ACCT-ASX-4412"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "Pine Court Hotel",
+     "attribute": "nightly_rate",
+     "value": "98.42"
+    },
+    {
+     "entity": "The Linden",
+     "attribute": "nightly_rate",
+     "value": "215.49"
+    },
+    {
+     "entity": "Atlas Suites",
+     "attribute": "nightly_rate",
+     "value": "238.09"
+    }
+   ]
+  },
+  {
+   "source_id": "trip_request",
+   "text": "# Trip request\nTraveler: Omar Costa <omar.costa@acme-corp.example>\nDestination: Osaka\nNights: 6 (shortened on 2026-10-21; originally 7 nights)\nPolicy: choose the cheapest flight and the cheapest hotel.\n",
+   "extract": "Use 'trip' as entity. Extract attributes: nights (current number, number only), traveler_email.",
+   "records": [
+    {
+     "entity": "trip",
+     "attribute": "nights",
+     "value": "6"
+    },
+    {
+     "entity": "trip",
+     "attribute": "traveler_email",
+     "value": "omar.costa@acme-corp.example"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "trip",
+     "attribute": "nights",
+     "value": "7"
+    }
+   ]
+  }
+ ],
+ "expected": {
+  "payments": [
+   [
+    "ACCT-SAX-1731",
+    574.64
+   ],
+   [
+    "ACCT-PCH-3716",
+    754.8
+   ]
+  ],
+  "kv": {
+   "trip/total": "1329.44"
+  },
+  "files": {
+   "trips/itinerary.md": [
+    "SK309",
+    "Pine Court Hotel",
+    "1329.44"
+   ]
+  },
+  "emails": [
+   [
+    "omar.costa@acme-corp.example",
+    [
+     "SK309",
+     "Pine Court Hotel",
+     "1329.44"
+    ]
+   ]
+  ]
+ }
+}

@@ -1,0 +1,171 @@
+{
+ "task_id": "travel-0",
+ "template": "travel",
+ "goal": "Book a trip to Toronto. Steps: (1) pay the cheapest flight's fare to its billing account (memo 'flight booking'); (2) pay the cheapest hotel nightly rate x nights to its billing account (memo 'hotel booking'); (3) set KV key `trip/total` to flight fare + hotel cost with 2 decimals; (4) write file `trips/itinerary.md` with the flight code, hotel name, nights and total; (5) email the traveler with subject 'Trip itinerary' naming the flight code and hotel and stating the total, reading the total from KV `trip/total`.",
+ "sources": [
+  {
+   "source_id": "flights",
+   "text": "# Flight options to Toronto (economy, round trip)\n\n## Flight ME875 (Meridian Air)\n- Fare: $491.81 (fare drop on 2026-10-22; was $590.74)\n- Billing account: ACCT-MAX-6075\n\n## Flight SK576 (SkyBridge Air)\n- Fare: $1339.63 (fare drop on 2026-10-22; was $1446.23)\n- Billing account: ACCT-SAX-3688\n\n## Flight CO357 (Coral Jet)\n- Fare: $484.05 (fare drop on 2026-10-22; was $538.36)\n- Billing account: ACCT-CJX-9203\n",
+   "extract": "One entity per flight (use the flight code, e.g. AB123). Extract attributes: fare (the CURRENT fare, number only), billing_account.",
+   "records": [
+    {
+     "entity": "ME875",
+     "attribute": "fare",
+     "value": "491.81"
+    },
+    {
+     "entity": "ME875",
+     "attribute": "billing_account",
+     "value": "ACCT-MAX-6075"
+    },
+    {
+     "entity": "SK576",
+     "attribute": "fare",
+     "value": "1339.63"
+    },
+    {
+     "entity": "SK576",
+     "attribute": "billing_account",
+     "value": "ACCT-SAX-3688"
+    },
+    {
+     "entity": "CO357",
+     "attribute": "fare",
+     "value": "484.05"
+    },
+    {
+     "entity": "CO357",
+     "attribute": "billing_account",
+     "value": "ACCT-CJX-9203"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "ME875",
+     "attribute": "fare",
+     "value": "590.74"
+    },
+    {
+     "entity": "SK576",
+     "attribute": "fare",
+     "value": "1446.23"
+    },
+    {
+     "entity": "CO357",
+     "attribute": "fare",
+     "value": "538.36"
+    }
+   ]
+  },
+  {
+   "source_id": "hotels",
+   "text": "# Hotel options in Toronto\n\n## Harbor View Inn\n- Nightly rate: $192.40 (season rate from 2026-10-15; off-season $169.34)\n- Billing account: ACCT-HVI-5790\n\n## The Linden\n- Nightly rate: $109.41 (season rate from 2026-10-15; off-season $84.14)\n- Billing account: ACCT-TLX-5470\n\n## Atlas Suites\n- Nightly rate: $282.00 (season rate from 2026-10-15; off-season $257.31)\n- Billing account: ACCT-ASX-2325\n",
+   "extract": "One entity per hotel (hotel name). Extract attributes: nightly_rate (the CURRENT season rate, number only), billing_account.",
+   "records": [
+    {
+     "entity": "Harbor View Inn",
+     "attribute": "nightly_rate",
+     "value": "192.40"
+    },
+    {
+     "entity": "Harbor View Inn",
+     "attribute": "billing_account",
+     "value": "ACCT-HVI-5790"
+    },
+    {
+     "entity": "The Linden",
+     "attribute": "nightly_rate",
+     "value": "109.41"
+    },
+    {
+     "entity": "The Linden",
+     "attribute": "billing_account",
+     "value": "ACCT-TLX-5470"
+    },
+    {
+     "entity": "Atlas Suites",
+     "attribute": "nightly_rate",
+     "value": "282.00"
+    },
+    {
+     "entity": "Atlas Suites",
+     "attribute": "billing_account",
+     "value": "ACCT-ASX-2325"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "Harbor View Inn",
+     "attribute": "nightly_rate",
+     "value": "169.34"
+    },
+    {
+     "entity": "The Linden",
+     "attribute": "nightly_rate",
+     "value": "84.14"
+    },
+    {
+     "entity": "Atlas Suites",
+     "attribute": "nightly_rate",
+     "value": "257.31"
+    }
+   ]
+  },
+  {
+   "source_id": "trip_request",
+   "text": "# Trip request\nTraveler: Jonas Weber <jonas.weber@acme-corp.example>\nDestination: Toronto\nNights: 3 (shortened on 2026-10-21; originally 7 nights)\nPolicy: choose the cheapest flight and the cheapest hotel.\n",
+   "extract": "Use 'trip' as entity. Extract attributes: nights (current number, number only), traveler_email.",
+   "records": [
+    {
+     "entity": "trip",
+     "attribute": "nights",
+     "value": "3"
+    },
+    {
+     "entity": "trip",
+     "attribute": "traveler_email",
+     "value": "jonas.weber@acme-corp.example"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "trip",
+     "attribute": "nights",
+     "value": "7"
+    }
+   ]
+  }
+ ],
+ "expected": {
+  "payments": [
+   [
+    "ACCT-CJX-9203",
+    484.05
+   ],
+   [
+    "ACCT-TLX-5470",
+    328.23
+   ]
+  ],
+  "kv": {
+   "trip/total": "812.28"
+  },
+  "files": {
+   "trips/itinerary.md": [
+    "CO357",
+    "The Linden",
+    "812.28"
+   ]
+  },
+  "emails": [
+   [
+    "jonas.weber@acme-corp.example",
+    [
+     "CO357",
+     "The Linden",
+     "812.28"
+    ]
+   ]
+  ]
+ }
+}

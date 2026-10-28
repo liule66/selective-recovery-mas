@@ -1,0 +1,130 @@
+{
+ "task_id": "procurement-0",
+ "template": "procurement",
+ "goal": "Purchase the requested quantity of network switch from the vendor with the lowest current unit price. Steps: (1) pay the chosen vendor quantity x unit price at its payment account (memo 'purchase order'); (2) set KV key `order/vendor` to the vendor name; (3) set KV key `order/total` to the total amount with 2 decimals; (4) write file `orders/summary.md` listing vendor, unit price, quantity and total; (5) email the approving manager with subject 'Order confirmation' stating the vendor and the total, reading the total from KV `order/total`.",
+ "sources": [
+  {
+   "source_id": "vendor_1",
+   "text": "# Vendor quote: Dynamo Parts\nProduct: network switch\nCurrent unit price: $366.72 per unit (updated 2026-10-20)\nPrevious unit price: $419.20 (valid until 2026-09-30)\nPayment account: ACCT-DPX-3692\nLead time: 12 business days\n",
+   "extract": "Use the vendor name as entity. Extract attributes: unit_price (the CURRENT unit price, number only), payment_account.",
+   "records": [
+    {
+     "entity": "Dynamo Parts",
+     "attribute": "unit_price",
+     "value": "366.72"
+    },
+    {
+     "entity": "Dynamo Parts",
+     "attribute": "payment_account",
+     "value": "ACCT-DPX-3692"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "Dynamo Parts",
+     "attribute": "unit_price",
+     "value": "419.20"
+    }
+   ]
+  },
+  {
+   "source_id": "vendor_2",
+   "text": "# Vendor quote: Apex Components\nProduct: network switch\nCurrent unit price: $324.43 per unit (updated 2026-10-20)\nPrevious unit price: $390.02 (valid until 2026-09-30)\nPayment account: ACCT-ACX-1341\nLead time: 8 business days\n",
+   "extract": "Use the vendor name as entity. Extract attributes: unit_price (the CURRENT unit price, number only), payment_account.",
+   "records": [
+    {
+     "entity": "Apex Components",
+     "attribute": "unit_price",
+     "value": "324.43"
+    },
+    {
+     "entity": "Apex Components",
+     "attribute": "payment_account",
+     "value": "ACCT-ACX-1341"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "Apex Components",
+     "attribute": "unit_price",
+     "value": "390.02"
+    }
+   ]
+  },
+  {
+   "source_id": "vendor_3",
+   "text": "# Vendor quote: Granite Works\nProduct: network switch\nCurrent unit price: $504.82 per unit (updated 2026-10-20)\nPrevious unit price: $445.97 (valid until 2026-09-30)\nPayment account: ACCT-GWX-3955\nLead time: 8 business days\n",
+   "extract": "Use the vendor name as entity. Extract attributes: unit_price (the CURRENT unit price, number only), payment_account.",
+   "records": [
+    {
+     "entity": "Granite Works",
+     "attribute": "unit_price",
+     "value": "504.82"
+    },
+    {
+     "entity": "Granite Works",
+     "attribute": "payment_account",
+     "value": "ACCT-GWX-3955"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "Granite Works",
+     "attribute": "unit_price",
+     "value": "445.97"
+    }
+   ]
+  },
+  {
+   "source_id": "request",
+   "text": "# Purchasing request PR-631\nRequested product: network switch\nQuantity: 7 units (revised 2026-10-18; the original request was 14 units)\nApproving manager: Pavel Weber <pavel.weber@acme-corp.example>\nRule: buy from the vendor with the lowest current unit price.\n",
+   "extract": "Use 'purchase' as entity. Extract attributes: quantity (the current revised quantity, number only), manager_email.",
+   "records": [
+    {
+     "entity": "purchase",
+     "attribute": "quantity",
+     "value": "7"
+    },
+    {
+     "entity": "purchase",
+     "attribute": "manager_email",
+     "value": "pavel.weber@acme-corp.example"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "purchase",
+     "attribute": "quantity",
+     "value": "14"
+    }
+   ]
+  }
+ ],
+ "expected": {
+  "payments": [
+   [
+    "ACCT-ACX-1341",
+    2271.01
+   ]
+  ],
+  "kv": {
+   "order/vendor": "Apex Components",
+   "order/total": "2271.01"
+  },
+  "files": {
+   "orders/summary.md": [
+    "Apex Components",
+    "2271.01"
+   ]
+  },
+  "emails": [
+   [
+    "pavel.weber@acme-corp.example",
+    [
+     "Apex Components",
+     "2271.01"
+    ]
+   ]
+  ]
+ }
+}
