@@ -1,0 +1,28 @@
+Option 5 Proposed Direction: Dependency-Aware Selective Recovery in Multi-Agent Workflows
+
+Question. Sometimes one agent’s output turns out to be faulty: wrong, stale, fabricated, or carrying a malicious instruction. If we track dependencies between agent results, can we recompute only the affected work instead of restarting everything, and still keep the task correct and safe? When does this stop paying off?
+
+Setup. A small researcher → planner → executor workflow with fan-out (several researchers, independent executor steps). It runs small local models on CPU. The simulated tools have programmatically checkable outcomes:
+
+a file workspace and a key-value store shared by the agents, both restorable;
+a payment ledger that supports refunds (compensable);
+an email outbox (irreversible).
+
+Phase 1. Inject accidental and adversarial faults at different stages. Log the messages, state changes, tool actions and dependencies, and measure how far each fault spreads. Use counterfactual replay to confirm that downstream outputs actually depend on the injected result. Baselines are full restart and always-verify.
+
+Phase 2. Dependency-aware invalidation, with the faulty result’s identity given by an oracle. Restore only the affected state, rerun only the dependent steps, and report irreversible actions as unrecovered. Compare against full restart, suffix replay and always-verify under identical fault schedules and budgets.
+
+Depth. The core analysis is recovery precision versus bookkeeping cost. Tracking at a coarser or finer level (per stage, per message, per fact) trades tracking overhead against two errors: invalidating results that were fine, and reusing results that were actually affected. Stretch goal: recovery when other agents have changed the shared state after the fault.
+
+Novelty. Recent work does selective recovery for a single agent or for user-triggered revisions, e.g., REVISE (arXiv 2609.00643) and Dependency-Guided Rollback Repair (arXiv 2608.10502). We target the multi-agent, fault-triggered setting with shared state and side effects.
+
+TA proposal feedback: Hi team,
+
+Thank you for submitting your project proposal. Here is the feedback from the instructor:
+
+Good plan overall. Just plan for time to implement state restore, esp. for more complex types of environments.
+
+Feel free to reach out if you have any questions.
+
+Best,
+Boqin

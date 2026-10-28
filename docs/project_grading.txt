@@ -1,0 +1,26 @@
+This course has one project. Projects may be completed individually or in groups of 1–4 students. Every student in a group receives the same score for each project component and for the project overall. Individual contribution statements are not required and will not be considered, even if submitted; this is a group project. No late submissions will be considered (i.e., zero points towards the project part of your grade).
+
+Project Topics
+Project topics can be found on Canvas for registered students.
+
+Phase 1 (15%) due Nov 4, 2026
+Depending on your project topic, the phase 1 can involve exploring existing solutions, coming up with datasets, performing evaluation, etc. We will be grading this part with some quantifiable metrics based on your submitted code/data.
+
+Phase 1 Report (10%) due Nov 4, 2026
+As a part of Phase 1, you should write a 1-2 page writeup, depending on your chosen topic. In addition, you should add an appendix to provide a timeline and milestones of your project.
+
+Phase 2 (25%) due December 10, 2026
+Phase 2 involves building the actual solution. We will be grading your final submitted code based on some quantifiable metrics, depending on your chosen topic.
+
+Final Project Report (25%) due December 10, 2026
+Each group should write a summary report of your project. This report should summarize both the project itself (problem definition, motivation, design overview, detailed solutions and implementations, evaluation methods and results, related works) and your experience in doing the project (difficulties that you’ve met, what you’ve tried and spend a lot of time at but didn’t work, what techniques/tricks you found worked well, etc.). There is no strict percentage of how much each part of the summary should contribute to.
+
+The main purpose of the summary report is to provide a way to evaluate your project and what you have achieved over the quater. But as a graduate student, practicing technical report (e.g., papers, whitepapers, proposals) writing is very important to your career. Thus, you should view this as a good chance of practicing and pay attention to the writing quality as well (i.e., write clearly, has a logical, smooth flow, and plot useful, clear figures).
+
+You should make sure that your submission prints properly with the following requirements:
+
+Between 4 to 6 single-spaced pages, including figures, and tables, but excluding references.
+Use 10-point type on 12-point (single-spaced) leading, two-column format, and Times Roman or a similar font for the body of the summary.
+All text and figures must fit a text block 7” wide x 9” deep.
+Pages should be numbered, and figures and tables should be legible when printed, without requiring magnification.
+Only submit PDF files

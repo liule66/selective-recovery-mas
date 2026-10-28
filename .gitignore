@@ -1,0 +1,27 @@
+# secrets
+api.txt
+.env
+*.key
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+
+# experiment artifacts (raw logs and LLM cache stay local)
+results/raw/
+.llm_cache/
+
+# latex
+report/**/*.aux
+report/**/*.log
+report/**/*.out
+report/**/*.synctex.gz
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
