@@ -54,8 +54,7 @@ def test_granularities_are_nested(stage, ftype, llm):
         faulty = run_workflow(task, llm, FaultSpec(stage, ftype, 0))
         fact, msg, stg = (predict(faulty.trace, g) for g in ("fact", "message", "stage"))
         assert fact <= msg <= stg
-        actual = actual_affected(faulty.trace, clean.trace)
-        assert score(stg, actual, faulty.trace, clean.trace)["recall"] == 1.0
+        assert score(stg, faulty.trace, clean.trace)["recall"] == 1.0
 
 
 def test_full_restart_restores_state_but_not_email(llm):

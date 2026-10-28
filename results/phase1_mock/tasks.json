@@ -1,11 +1,11 @@
 {
  "llm": "mock",
- "elapsed_s": 9.5,
+ "elapsed_s": 5.2,
  "llm_stats": {
-  "live_calls": 649,
-  "cache_hits": 7443,
-  "live_input_tokens": 294393,
-  "live_output_tokens": 73186,
+  "live_calls": 0,
+  "cache_hits": 8092,
+  "live_input_tokens": 0,
+  "live_output_tokens": 0,
   "refusals": 0
  },
  "tasks": [

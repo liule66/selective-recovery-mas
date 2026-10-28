@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 import pandas as pd  # noqa: E402
 
-from srmas.analysis.counterfactual import actual_affected, score  # noqa: E402
+from srmas.analysis.counterfactual import actual_affected, affected_pairs, score  # noqa: E402
 from srmas.analysis.propagation import propagation  # noqa: E402
 from srmas.baselines.baselines import always_verify, full_restart  # noqa: E402
 from srmas.faults.injector import ACCIDENTAL, fault_matrix  # noqa: E402
@@ -72,16 +72,19 @@ def run_task(task: Task, llm: LLM, fault_seeds: tuple[int, ...], raw_dir: Path,
         row |= {f"faulty_{k}": v for k, v in faulty.check.items()}
         row |= propagation(faulty, clean)
 
-        actual = actual_affected(faulty.trace, clean.trace)
         full_tokens = clean.tokens
         for g in GRANULARITIES:
             pred = predict(faulty.trace, g)
-            for k, v in score(pred, actual, faulty.trace, clean.trace).items():
+            for k, v in score(pred, faulty.trace, clean.trace).items():
                 row[f"{g}_{k}"] = v
             for k, v in bookkeeping(faulty.trace, g).items():
                 row[f"{g}_book_{k}"] = v
-            recompute = sum(clean.trace.nodes[u].tokens for u in pred if u in clean.trace.nodes)
+            recompute = sum(faulty.trace.nodes[u].tokens for u in pred)
             row[f"{g}_recompute_frac"] = recompute / full_tokens if full_tokens else 0.0
+        fact_pred = predict(faulty.trace, "fact")
+        row["fact_missed_units"] = ";".join(
+            f or c for f, c in affected_pairs(faulty.trace, clean.trace)
+            if not (f in fact_pred if f else ("plan" in fact_pred or c in fact_pred)))
         row |= full_restart(task, llm, faulty, clean)
         if not skip_verify:
             row |= always_verify(task, llm, spec)

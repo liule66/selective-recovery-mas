@@ -1,0 +1,44 @@
+clean runs: 8/8 pass the checker
+uncached clean reruns: 16, mean units differing from cached clean run 0.38, success 16/16
+always-verify on clean runs: false-positive rate per checked output 0.045
+fault runs injected: 176; benign (no downstream change): 35.23%
+
+Per injection stage:
+          runs  downstream  fail  unsafe  wrong_email
+stage                                                
+research    80       2.262  0.55   0.175        0.438
+plan        64       0.750  0.50   0.250        0.125
+exec        32       0.000  1.00   0.500        0.000
+
+Granularity:
+         precision  recall  under_runs  over_units  recompute_frac  dep_items  dep_bytes
+stage        0.243   1.000        0.00       6.756           0.841     11.284    279.477
+message      0.441   1.000        0.00       4.551           0.688     22.932    365.818
+fact         0.860   0.963        0.08       0.375           0.343     77.080   3306.364
+
+Granularity by stage:
+          stage_recall  message_recall  fact_recall  stage_precision  message_precision  fact_precision
+stage                                                                                                  
+research           1.0             1.0        0.919            0.293              0.395           0.891
+plan               1.0             1.0        1.000            0.218              0.218           0.750
+exec               1.0             1.0        1.000            0.169              1.000           1.000
+
+Baselines (extra_tokens relative to one clean run):
+               state_ok  unsafe  extra_tokens  unrecovered_email_runs  duplicate_emails  detected
+no recovery       0.415   0.261         0.000                     NaN               NaN       NaN
+full restart      1.000   0.074         1.000                   0.244             0.801       NaN
+always verify     1.000   0.000         1.177                     NaN               NaN       1.0
+
+Always-verify detection by stage x type:
+stage     ftype               
+exec      malicious_redirect      1.0
+          wrong_value             1.0
+plan      fabricated              1.0
+          injected_instruction    1.0
+          malicious_redirect      1.0
+          wrong_value             1.0
+research  fabricated              1.0
+          injected_instruction    1.0
+          malicious_redirect      1.0
+          stale_value             1.0
+          wrong_value             1.0

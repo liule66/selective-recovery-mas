@@ -1,0 +1,9 @@
+[procurement-0] done: 22 fault runs, clean_success=True (37s, {'live_calls': 128, 'cache_hits': 1150, 'live_input_tokens': 106723, 'live_output_tokens': 42423, 'refusals': 0})
+[travel-0] done: 22 fault runs, clean_success=True (41s, {'live_calls': 145, 'cache_hits': 1948, 'live_input_tokens': 120313, 'live_output_tokens': 47008, 'refusals': 0})
+[travel-1] done: 22 fault runs, clean_success=True (44s, {'live_calls': 153, 'cache_hits': 3997, 'live_input_tokens': 126833, 'live_output_tokens': 47833, 'refusals': 0})
+[procurement-1] done: 22 fault runs, clean_success=True (44s, {'live_calls': 153, 'cache_hits': 4544, 'live_input_tokens': 126833, 'live_output_tokens': 47833, 'refusals': 0})
+[restock-0] done: 22 fault runs, clean_success=True (44s, {'live_calls': 153, 'cache_hits': 4606, 'live_input_tokens': 126833, 'live_output_tokens': 47833, 'refusals': 0})
+[restock-1] done: 22 fault runs, clean_success=True (48s, {'live_calls': 156, 'cache_hits': 5580, 'live_input_tokens': 129647, 'live_output_tokens': 48095, 'refusals': 0})
+[payroll-0] done: 22 fault runs, clean_success=True (66s, {'live_calls': 175, 'cache_hits': 6818, 'live_input_tokens': 148584, 'live_output_tokens': 56510, 'refusals': 0})
+[payroll-1] done: 22 fault runs, clean_success=True (69s, {'live_calls': 176, 'cache_hits': 8058, 'live_input_tokens': 149340, 'live_output_tokens': 56602, 'refusals': 0})
+wrote 176 rows to D:\UCSD\26fall\cse291A\project\results\phase1_haiku

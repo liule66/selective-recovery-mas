@@ -31,6 +31,14 @@ Put the Anthropic API key in `ANTHROPIC_API_KEY` or in `api.txt` at the repo roo
 | `experiments/` | Experiment drivers and configs |
 | `report/` | Phase reports |
 
+## Phase 1 results (Claude Haiku 5.5, 8 tasks × 22 faults)
+
+Report: [report/phase1/main.pdf](report/phase1/main.pdf). Numbers: [results/phase1_haiku/summary.txt](results/phase1_haiku/summary.txt).
+
+- Without recovery only 39% of fault runs pass; researcher faults change 2.3 downstream agent calls on average and leave a wrong (irreversible) email in 44% of runs.
+- Dependency tracking: stage / message / fact granularity reach precision 0.24 / 0.44 / 0.86 and recall 1.00 / 1.00 / 0.96, recomputing 84% / 69% / 34% of a full run.
+- Full restart repairs all restorable and compensable state but cannot recall wrong emails (24% of runs); always-verify catches every injected fault but costs 1.18× tokens on every run.
+
 ## Running
 
 ```bash

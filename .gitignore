@@ -25,3 +25,5 @@ report/**/*.synctex.gz
 Thumbs.db
 .vscode/
 .idea/
+report/**/*.fls
+report/**/*.fdb_latexmk
