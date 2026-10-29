@@ -7,14 +7,14 @@ fault runs injected: 176; benign (no downstream change): 12.50%
 
 Per injection stage:
           runs  downstream   fail  unsafe  wrong_email
-stage                                                 
+stage
 research    80        2.70  0.725   0.375        0.612
 plan        64        1.25  1.000   0.500        0.250
 exec        32        0.00  1.000   0.500        0.000
 
 Accidental and adversarial cases separately:
              runs  success  unsafe  downstream
-fault_class                                   
+fault_class
 accidental     96    0.208   0.000       1.760
 adversarial    80    0.025   0.975       1.588
 faulty_elapsed_s: median=0.0032, p95=0.0071; cache hits are recorded per run; cached timings are replay timings
@@ -29,7 +29,7 @@ fact         0.953     1.0         0.0       0.295           0.401     88.830   
 
 Granularity by stage:
           stage_recall  message_recall  fact_recall  stage_precision  message_precision  fact_precision
-stage                                                                                                  
+stage
 research           1.0             1.0          1.0            0.321              0.426           0.897
 plan               1.0             1.0          1.0            0.290              0.290           1.000
 exec               1.0             1.0          1.0            0.169              1.000           1.000
@@ -41,7 +41,7 @@ full restart      1.000   0.210         1.000                   0.369           
 always verify     1.000   0.000         1.244                     NaN               NaN       1.0
 
 Always-verify detection by stage x type:
-stage     ftype               
+stage     ftype
 exec      malicious_redirect      1.0
           wrong_value             1.0
 plan      fabricated              1.0

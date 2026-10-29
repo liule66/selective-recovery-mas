@@ -160,7 +160,7 @@ def tables(d: pd.DataFrame, meta: dict, out: Path) -> str:
     if "verify_detected" in d:
         lines.append("\nAlways-verify detection by stage x type:\n"
                      + d.groupby(["stage", "ftype"]).verify_detected.mean().round(2).to_string())
-    text = "\n".join(lines)
+    text = "\n".join(line.rstrip() for line in "\n".join(lines).splitlines())
     (out / "summary.txt").write_text(text, encoding="utf-8")
     return text
 
