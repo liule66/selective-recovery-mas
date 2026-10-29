@@ -1,10 +1,10 @@
 """LLM client interface with an on-disk response cache.
 
-The Claude API no longer accepts sampling parameters, so two identical prompts can
-yield different outputs. The cache makes a step whose prompt did not change return
+Identical prompts can yield different outputs. The cache makes an unchanged step return
 exactly the output it returned before. That is what both counterfactual replay and
 selective recovery need: only steps whose inputs changed are re-sampled, so any
-difference downstream is caused by the fault, not by sampling noise.
+changes in unchanged steps are avoided. Changed prompts can still resample;
+counterfactual comparisons do not remove every stochastic confounder.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import json
 import threading
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
@@ -26,6 +27,7 @@ class LLMResult:
     output_tokens: int
     cached: bool = False
     refused: bool = False
+    elapsed_s: float = 0.0
 
 
 @dataclass
@@ -54,6 +56,7 @@ class LLM:
 
     def complete(self, system: str, user: str, schema: dict[str, Any],
                  oracle: Oracle | None = None, use_cache: bool = True) -> LLMResult:
+        started = time.perf_counter()
         key = hashlib.sha256(
             json.dumps([self.name, system, user, schema], sort_keys=True).encode()
         ).hexdigest()
@@ -63,7 +66,8 @@ class LLM:
             with self.stats.lock:
                 self.stats.cache_hits += 1
             return LLMResult(rec["data"], rec["input_tokens"], rec["output_tokens"],
-                             cached=True, refused=rec.get("refused", False))
+                             cached=True, refused=rec.get("refused", False),
+                             elapsed_s=time.perf_counter() - started)
 
         result = self._call(system, user, schema, oracle)
         with self.stats.lock:
@@ -78,6 +82,7 @@ class LLM:
                 "output_tokens": result.output_tokens, "refused": result.refused,
             }), encoding="utf-8")
             tmp.replace(path)
+        result.elapsed_s = time.perf_counter() - started
         return result
 
     def _call(self, system: str, user: str, schema: dict[str, Any],
@@ -92,4 +97,7 @@ def make_llm(kind: str, cache_dir: str | Path | None = None, **kwargs: Any) -> L
     if kind in ("haiku", "anthropic"):
         from .anthropic_client import AnthropicLLM
         return AnthropicLLM(cache_dir=cache_dir, **kwargs)
+    if kind == "triton":
+        from .triton_client import TritonLLM
+        return TritonLLM(cache_dir=cache_dir, **kwargs)
     raise ValueError(f"unknown llm {kind!r}")

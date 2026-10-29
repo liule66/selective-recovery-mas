@@ -91,6 +91,12 @@ def fig_granularity(d: pd.DataFrame, out: Path) -> None:
 def tables(d: pd.DataFrame, meta: dict, out: Path) -> str:
     lines = []
     tasks = meta["tasks"]
+    clean_tokens = {t["task_id"]: t["clean_tokens"] for t in tasks}
+    denominator = d["clean_tokens"] if "clean_tokens" in d else d.task_id.map(clean_tokens)
+    lines.append("Recompute fractions are token estimates, not measured selective recovery.")
+    lines.append("Measurement mode: " + meta.get("measurement_mode", "legacy; latency unavailable"))
+    if meta.get("failures"):
+        lines.append("INCOMPLETE EXPERIMENT: failures are recorded in tasks.json; do not treat as a full matrix.")
     lines.append(f"clean runs: {sum(t['clean_success'] for t in tasks)}/{len(tasks)} pass the checker")
     noise = [n for t in tasks for n in t.get("noise", [])]
     if noise:
@@ -108,6 +114,15 @@ def tables(d: pd.DataFrame, meta: dict, out: Path) -> str:
         fail=("faulty_success", lambda s: 1 - s.mean()), unsafe=("faulty_safety_violation", "mean"),
         wrong_email=("emails_wrong", lambda s: (s > 0).mean())).reindex(STAGE_ORDER)
     lines.append("\nPer injection stage:\n" + by_stage.round(3).to_string())
+    if "fault_class" in d:
+        classes = d.groupby("fault_class").agg(runs=("task_id", "size"),
+            success=("faulty_success", "mean"), unsafe=("faulty_safety_violation", "mean"),
+            downstream=("downstream_affected", "mean"))
+        lines.append("\nAccidental and adversarial cases separately:\n" + classes.round(3).to_string())
+    for col in ("faulty_elapsed_s", "restart_elapsed_s", "verify_elapsed_s"):
+        if col in d:
+            lines.append(f"{col}: median={d[col].median():.4f}, p95={d[col].quantile(.95):.4f}; "
+                         "cache hits are recorded per run; cached timings are replay timings")
 
     gran = pd.DataFrame({g: {
         "precision": d[f"{g}_precision"].mean(), "recall": d[f"{g}_recall"].mean(),
@@ -123,14 +138,13 @@ def tables(d: pd.DataFrame, meta: dict, out: Path) -> str:
                             "unsafe": d.faulty_safety_violation.mean(), "extra_tokens": 0.0},
             "full restart": {"state_ok": d.restart_state_ok.mean(),
                              "unsafe": d.restart_safety_violation.mean(),
-                             "extra_tokens": (d.restart_tokens / d.restart_tokens).mean(),
+                             "extra_tokens": (d.restart_tokens / denominator).mean(),
                              "unrecovered_email_runs": (d.restart_unrecovered_emails > 0).mean(),
                              "duplicate_emails": d.restart_duplicate_emails.mean()}}
     if "verify_detected" in d:
-        clean_tokens = {t["task_id"]: t["clean_tokens"] for t in tasks}
         base["always verify"] = {
             "state_ok": d.verify_state_ok.mean(), "unsafe": d.verify_safety_violation.mean(),
-            "extra_tokens": (d.verify_overhead_tokens / d.task_id.map(clean_tokens)).mean(),
+            "extra_tokens": (d.verify_overhead_tokens / denominator).mean(),
             "detected": d.verify_detected.mean()}
     lines.append("\nBaselines (extra_tokens relative to one clean run):\n"
                  + pd.DataFrame(base).T.round(3).to_string())

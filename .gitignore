@@ -1,6 +1,10 @@
 # secrets
 api.txt
 .env
+.env.*
+!.env.example
+.local/
+*.zip
 *.key
 
 # python
@@ -13,6 +17,8 @@ __pycache__/
 # experiment artifacts (raw logs and LLM cache stay local)
 results/raw/
 .llm_cache/
+results/**/response_cache/
+results/**/traces/
 
 # latex
 report/**/*.aux

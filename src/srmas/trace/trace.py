@@ -35,6 +35,8 @@ class Node:
     injected: bool = False
     error: str = ""
     verify: dict[str, Any] | None = None
+    elapsed_s: float = 0.0
+    retry: dict[str, Any] | None = None
 
     @property
     def tokens(self) -> int:

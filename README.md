@@ -31,13 +31,17 @@ Put the Anthropic API key in `ANTHROPIC_API_KEY` or in `api.txt` at the repo roo
 | `experiments/` | Experiment drivers and configs |
 | `report/` | Phase reports |
 
-## Phase 1 results (Claude Haiku 5.5, 8 tasks × 22 faults)
+## Original Phase 1 results (Claude Haiku 5.5, 8 tasks × 22 faults)
 
 Report: [report/phase1/main.pdf](report/phase1/main.pdf). Numbers: [results/phase1_haiku/summary.txt](results/phase1_haiku/summary.txt).
 
 - Without recovery only 39% of fault runs pass; researcher faults change 2.3 downstream agent calls on average and leave a wrong (irreversible) email in 44% of runs.
-- Dependency tracking: stage / message / fact granularity reach precision 0.24 / 0.44 / 0.86 and recall 1.00 / 1.00 / 0.96, recomputing 84% / 69% / 34% of a full run.
-- Full restart repairs all restorable and compensable state but cannot recall wrong emails (24% of runs); always-verify catches every injected fault but costs 1.18× tokens on every run.
+- Dependency tracking: stage / message / fact granularity reach precision 0.24 / 0.44 / 0.86 and recall 1.00 / 1.00 / 0.96. Predicted recomputation token costs are 84% / 69% / 34% of a full run; selective recovery is not implemented yet.
+- Full restart repairs restorable and compensable state but cannot recall wrong emails (24% of runs). The original verification experiment restored pre-injection outputs after detection and estimated retry tokens; its 100% detection and 1.18× extra-cost figures do not measure the revised real-retry baseline.
+
+The revised harness adds real uncached verification retries, per-run timing,
+shareable synthetic traces, explicit incomplete-run records, and a budgeted campus
+API client. See [the reproducibility guide](docs/PHASE1_REPRODUCIBILITY.md).
 
 ## Running
 

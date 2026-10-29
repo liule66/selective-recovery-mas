@@ -4,7 +4,9 @@ fault injection / always-verify."""
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+import time
+from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Any
 
 from ..agents import agents
@@ -24,10 +26,20 @@ class RunResult:
     verify_tokens: int = 0
     retry_tokens: int = 0
     flagged: list[str] = field(default_factory=list)
+    elapsed_s: float = 0.0
 
     @property
     def tokens(self) -> int:
         return sum(n.tokens for n in self.trace.nodes.values())
+
+    def dump(self, path: str | Path) -> None:
+        """Synthetic artifacts and tool actions; never client credentials."""
+        payload = self.trace.to_dict() | {
+            "environment": asdict(self.env), "check": self.check,
+            "elapsed_s": self.elapsed_s, "tokens": self.tokens,
+            "verify_tokens": self.verify_tokens, "retry_tokens": self.retry_tokens,
+        }
+        Path(path).write_text(json.dumps(payload, indent=1), encoding="utf-8")
 
 
 def _clean_records(data: dict[str, Any]) -> list[dict[str, str]]:
@@ -86,6 +98,7 @@ def _order(steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def _fill(node: Node, res: LLMResult) -> None:
     node.tokens_in, node.tokens_out = res.input_tokens, res.output_tokens
     node.cached, node.refused = res.cached, res.refused
+    node.elapsed_s = res.elapsed_s
 
 
 def run_workflow(task: Task, llm: LLM, fault: FaultSpec | None = None, verify: bool = False,
@@ -97,6 +110,7 @@ def run_workflow(task: Task, llm: LLM, fault: FaultSpec | None = None, verify: b
     verify: always-verify baseline; a flagged output is regenerated once with the
             (transient) fault removed, and the verifier's and retry's tokens are counted.
     """
+    started = time.perf_counter()
     env = env if env is not None else Environment(workspace=task.files())
     inj = Injector(task, fault) if fault else None
     trace = Trace(task.task_id, fault.label if fault else None)
@@ -107,12 +121,17 @@ def run_workflow(task: Task, llm: LLM, fault: FaultSpec | None = None, verify: b
         v = agents.verify(llm, role, inputs, output, truly_ok=not bad, use_cache=use_cache)
         out.verify_calls += 1
         out.verify_tokens += v.input_tokens + v.output_tokens
-        ok = bool(v.data.get("ok", True)) or v.refused
-        node.verify = {"ok": ok, "issue": v.data.get("issue", ""), "faulty": bad}
+        ok = bool(v.data.get("ok", False)) and not v.refused
+        node.verify = {"ok": ok, "issue": v.data.get("issue", ""), "faulty": bad,
+                       "tokens": v.input_tokens + v.output_tokens,
+                       "cached": v.cached, "elapsed_s": v.elapsed_s}
         if not ok:
             out.flagged.append(node.node_id)
-            out.retry_tokens += res.input_tokens + res.output_tokens
         return not ok
+
+    def record_retry(node: Node, res: LLMResult) -> None:
+        out.retry_tokens += res.input_tokens + res.output_tokens
+        node.retry = asdict(res)
 
     # ------------------------------------------------------------- research (fan-out)
     facts: list[Fact] = []
@@ -126,7 +145,9 @@ def run_workflow(task: Task, llm: LLM, fault: FaultSpec | None = None, verify: b
         _fill(node, res)
         if verify and run_verifier(node, "researcher", f"{text}\n\nInstructions: {src.extract}",
                                    {"records": recs}, bool(changed), res):
-            recs, changed = raw, []
+            retry = agents.research(llm, src, text, use_cache=False)
+            record_retry(node, retry)
+            recs, changed = _clean_records(retry.data), []
             node.output, node.injected = recs, False
         src_facts = facts_from_records(src.source_id, recs)
         node.produces_facts = [f.fact_id for f in src_facts]
@@ -145,7 +166,9 @@ def run_workflow(task: Task, llm: LLM, fault: FaultSpec | None = None, verify: b
     _fill(node, res)
     plan_inputs = f"Goal: {task.goal}\n\nFacts:\n" + "\n".join(f.render() for f in facts)
     if verify and run_verifier(node, "planner", plan_inputs, {"steps": steps}, bool(changed_steps), res):
-        steps, changed_steps = raw_steps, []
+        retry = agents.plan(llm, task, facts, use_cache=False)
+        record_retry(node, retry)
+        steps, changed_steps = _clean_steps(retry.data), []
         node.output, node.injected = steps, False
     if changed_steps:
         trace.origin = {"unit": "plan", "steps": changed_steps, "applied": inj.applied}
@@ -178,7 +201,9 @@ def run_workflow(task: Task, llm: LLM, fault: FaultSpec | None = None, verify: b
             inputs = (f"Plan step: {json.dumps(s)}\nFacts:\n" + "\n".join(f.render() for f in cited)
                       + "\nState:\n" + "\n".join(f"{k} = {v}" for k, v in state.items()))
             if run_verifier(node, "executor", inputs, call, injected, res):
-                call, injected = raw_call, False
+                retry = agents.execute(llm, s, cited, state, use_cache=False)
+                record_retry(node, retry)
+                call, injected = _clean_call(retry.data), False
                 node.output, node.injected = call, False
         if injected:
             trace.origin = {"unit": nid, "applied": inj.applied}
@@ -196,4 +221,5 @@ def run_workflow(task: Task, llm: LLM, fault: FaultSpec | None = None, verify: b
         node.writes = [a.resource for a in env.accesses[n_before:] if a.kind == "write"]
 
     out.check = check(task, env)
+    out.elapsed_s = time.perf_counter() - started
     return out
