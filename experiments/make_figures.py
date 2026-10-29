@@ -106,7 +106,8 @@ def tables(d: pd.DataFrame, meta: dict, out: Path) -> str:
     cv = [t["clean_verify"] for t in tasks if "clean_verify" in t]
     if cv:
         fp = sum(c["verify_false_pos"] for c in cv) / max(1, sum(c["verify_checked"] for c in cv))
-        lines.append(f"always-verify on clean runs: false-positive rate per checked output {fp:.3f}")
+        lines.append(f"always-verify on clean runs: flag rate per non-injected output {fp:.3f} "
+                     "(not an adjudicated false-positive rate)")
     lines.append(f"fault runs injected: {len(d)}; benign (no downstream change): {d.fault_benign.mean():.2%}")
 
     by_stage = d.groupby("stage").agg(
