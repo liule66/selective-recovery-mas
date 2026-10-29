@@ -1,0 +1,55 @@
+Recompute fractions are token estimates, not measured selective recovery.
+Measurement mode: live_baselines
+clean runs: 8/8 pass the checker
+uncached clean reruns: 16, mean units differing from cached clean run 0.00, success 16/16
+always-verify on clean runs: false-positive rate per checked output 0.000
+fault runs injected: 176; benign (no downstream change): 12.50%
+
+Per injection stage:
+          runs  downstream   fail  unsafe  wrong_email
+stage                                                 
+research    80        2.70  0.725   0.375        0.612
+plan        64        1.25  1.000   0.500        0.250
+exec        32        0.00  1.000   0.500        0.000
+
+Accidental and adversarial cases separately:
+             runs  success  unsafe  downstream
+fault_class                                   
+accidental     96    0.208   0.000       1.760
+adversarial    80    0.025   0.975       1.588
+faulty_elapsed_s: median=0.0032, p95=0.0071; cache hits are recorded per run; cached timings are replay timings
+restart_elapsed_s: median=0.0019, p95=0.0027; cache hits are recorded per run; cached timings are replay timings
+verify_elapsed_s: median=0.0012, p95=0.0022; cache hits are recorded per run; cached timings are replay timings
+
+Granularity:
+         precision  recall  under_runs  over_units  recompute_frac  dep_items  dep_bytes
+stage        0.282     1.0         0.0       6.568           0.858     11.477    283.205
+message      0.481     1.0         0.0       4.364           0.710     23.136    367.955
+fact         0.953     1.0         0.0       0.295           0.401     88.830   3710.523
+
+Granularity by stage:
+          stage_recall  message_recall  fact_recall  stage_precision  message_precision  fact_precision
+stage                                                                                                  
+research           1.0             1.0          1.0            0.321              0.426           0.897
+plan               1.0             1.0          1.0            0.290              0.290           1.000
+exec               1.0             1.0          1.0            0.169              1.000           1.000
+
+Baselines (extra_tokens relative to one clean run):
+               state_ok  unsafe  extra_tokens  unrecovered_email_runs  duplicate_emails  detected
+no recovery       0.153   0.443         0.000                     NaN               NaN       NaN
+full restart      1.000   0.210         1.000                   0.369             0.812       NaN
+always verify     1.000   0.000         1.244                     NaN               NaN       1.0
+
+Always-verify detection by stage x type:
+stage     ftype               
+exec      malicious_redirect      1.0
+          wrong_value             1.0
+plan      fabricated              1.0
+          injected_instruction    1.0
+          malicious_redirect      1.0
+          wrong_value             1.0
+research  fabricated              1.0
+          injected_instruction    1.0
+          malicious_redirect      1.0
+          stale_value             1.0
+          wrong_value             1.0

@@ -43,6 +43,19 @@ The revised harness adds real uncached verification retries, per-run timing,
 shareable synthetic traces, explicit incomplete-run records, and a budgeted campus
 API client. See [the reproducibility guide](docs/PHASE1_REPRODUCIBILITY.md).
 
+## Revised validation on October 29
+
+- Campus model: `api-glm-5.3-flash`; credentials stayed in DataHub.
+- A [six-case live pilot](results/phase1_triton_pilot/summary.txt) measured actual restart/verification calls.
+- [44 serial propagation cases](results/phase1_triton_validation_serial/summary.txt) covered all four templates and 11 stage/fault combinations. Clean baseline success was 3/4, with 7/8 successful uncached repeats. On the 33 clean-capable fault cases, final success was 11/33 without recovery, 29/33 after restart, and 31/33 with actual verification retries. Cached replay times are not live latency measurements.
+- The earlier four-worker batch failed on requests before completing a fault case; its failure manifest is preserved in `results/phase1_triton_validation/tasks.json`.
+- 1,093 real requests cost an estimated $0.1761 in completed token usage plus $0.0141 reserved for uncertain failures, below the $5 cap. This is not an authoritative billing statement.
+- 36 offline tests pass. Updated report: [Phase 1 PDF](report/phase1/main.pdf), with measured validation and limitations in Appendix B.
+
+The separately supplied submission ZIP contains synthetic traces, response caches,
+cost records, and the exact experiment source overlays. Keep it with the repository
+and PDF for submission; these large evidence directories are intentionally ignored by Git.
+
 ## Running
 
 ```bash

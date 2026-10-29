@@ -70,9 +70,11 @@ def test_restart_summary_uses_clean_tokens(tmp_path):
     df = pd.read_csv(Path(__file__).parents[1] / "results/phase1_mock/runs.csv").head(2)
     df["clean_tokens"] = 100
     df["restart_tokens"] = 200
+    df["clean_success"] = [True, False]
     meta = {"tasks": [{"task_id": df.task_id.iloc[0], "clean_success": True, "clean_tokens": 100}]}
     text = module.tables(df, meta, tmp_path)
     assert "2.0" in text.split("full restart")[1].splitlines()[0]
+    assert "Clean-capable subset: 1/2" in text
 
 
 def test_all_failed_run_keeps_manifest_and_returns_failure(monkeypatch, tmp_path):

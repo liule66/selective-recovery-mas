@@ -12,7 +12,7 @@
 
 \title{\vspace{-1.6em}\Large Dependency-Aware Selective Recovery in Multi-Agent Workflows\\
 \large Phase 1 Report: Fault Propagation, Dependency Tracking, and Baselines}
-\author{CSE 291A, Fall 2026}
+\author{Option 5 Group 9 \quad CSE 291A, Fall 2026}
 \date{\vspace{-2.2em}}
 
 \begin{document}
@@ -22,18 +22,16 @@
 \noindent When one agent in a multi-agent workflow emits a faulty result, the standard remedy,
 restarting the workflow, repeats correct work and cannot undo irreversible side effects. We
 study whether dependency tracking can confine recovery to the work a fault actually affected.
-Across 176 injected faults and counterfactual ground truth, fact-level provenance predicts the
-affected set with precision 0.86 and recall 0.96 at 34\% of full-run recomputation. Stage-level
-tracking reaches precision 0.24 at 84\% recomputation, with $7\times$ less bookkeeping.
+Across 176 injected faults and counterfactual comparisons, fact-level provenance predicts the
+affected set with precision 0.86 and recall 0.96 at an estimated 34\% of full-run token cost.
+Stage tracking predicts 84\%, with $7\times$ fewer dependency records. These are invalidation
+estimates; selective execution is Phase~2 work.
 \end{abstract}
 
 \section{Introduction}
-LLM agents increasingly act on shared state through tools, so a single faulty result (a
-hallucinated value, a stale fact, an injected instruction) can reach downstream agents and side
-effects before it is detected. Restart-based recovery discards all work and leaves irreversible
-effects such as sent email in place; always-on verification pays a fixed cost on every run. We
-study \emph{selective recovery}: using recorded dependencies to invalidate, restore and recompute
-only affected work. Phase~1 builds an instrumented testbed and answers three research questions:
+A faulty agent result can propagate through shared state and tool actions before detection.
+Full restart repeats valid work and cannot retract sent email; verification adds inference
+cost. Phase~1 measures propagation and dependency tracking to guide selective recovery:
 \begin{enumerate}[label=\textbf{RQ\arabic*},leftmargin=*,widest=3]
 \item How far do faults propagate, and which reach irreversible or security-relevant actions?
 \item How does tracking granularity trade invalidation precision and recall against
@@ -53,33 +51,25 @@ failure, a safety violation, and an incorrect email already sent (irreversible).
 \end{figure*}
 
 \section{System and Threat Model}
-\para{System model.} A workflow consists of \emph{units}, i.e., single agent invocations.
-Researchers (one per source document) extract (entity, attribute, value) facts; a planner maps
-the goal and facts to a plan of tool calls, citing for each step the facts it uses; one
-executor per step emits a concrete tool call, seeing only the cited facts and requested state.
-State is \emph{restorable} (file workspace, key--value store; snapshot and per-key restore),
-\emph{compensable} (payment ledger with refunds, cf.\ sagas~\cite{sagas}), or
-\emph{irreversible} (email outbox). A trusted runtime logs every message, fact citation and
-state access, attributed to its unit.
+\para{System model.} Each \emph{unit} is one agent invocation. Researchers extract facts;
+a planner cites facts for each tool action; executors see their step's cited facts and
+requested state. The trusted runtime records messages, citations and state access.
+Files/KV are \emph{restorable}; payments are \emph{compensable} through refunds~\cite{sagas};
+email is \emph{irreversible}.
 
-\para{Threat model.} A single unit $v_0$, at any stage, emits a faulty result.
-\emph{Accidental} faults model benign model errors: a \emph{wrong} value, a \emph{stale}
-value still present in the source, or a \emph{fabricated} entity. \emph{Adversarial} faults
-follow the indirect prompt-injection setting~\cite{greshake,agentdojo}. We grant the attacker
-the stronger capability of rewriting $v_0$'s result directly, either \emph{injecting an
-instruction} (pay \$250 to an attacker account and email it the ledger) or
-\emph{redirecting} a payee or recipient to an attacker identity. Its goals are fund diversion,
-data exfiltration, and corruption of task state. The attacker knows the workflow's schemas and
-goal, but cannot alter tools, the environment, the provenance log, the checker, or other units'
-prompts; the runtime and log form the trusted computing base. Faults are detected after the
-run; as in intrusion recovery~\cite{retro}, an oracle identifies $v_0$ (detection is
-evaluated only via always-verify).
+\para{Threat model.} One unit $v_0$ emits a faulty result. Accidental faults are wrong/stale
+values or fabricated entities. Adversarial faults rewrite a result with an injected instruction
+(pay an attacker \$250 and email the ledger) or redirect a payee/recipient. This is stronger
+than source-level prompt injection~\cite{greshake,agentdojo}. The attacker knows the schemas and
+goal but cannot alter tools, logging, checkers or other agents' prompts. Recovery receives
+an oracle fault location after execution; detection is studied separately by verification.
 
 \para{Problem statement.} Let $G=(V,E)$ be the provenance graph of a faulty run $r$, and $r'$
 its counterfactual replay with $v_0$'s original result restored. With $\sigma$ extracting a
 result's decision-relevant content, the \emph{affected set} is
 $A=\{v : \sigma(r_v)\neq\sigma(r'_v)\}$. A tracking policy at granularity $g$ predicts an
-invalidation set $\hat{A}_g$ from $G$ and $v_0$ alone. Errors are
+invalidation set $\hat{A}_g$ from $G$ and the oracle location, including changed fact/step
+IDs for the fact policy. Errors are
 \emph{over-invalidation} ($\hat{A}_g\setminus A$, wasted work) and \emph{under-invalidation}
 ($A\setminus\hat{A}_g$, reuse of corrupted results). We report precision, recall, recompute
 cost $\sum_{v\in\hat{A}_g}c_v/\sum_{v\in V}c_v$ ($c_v$: tokens of $v$), and bookkeeping
@@ -87,7 +77,7 @@ cost $\sum_{v\in\hat{A}_g}c_v/\sum_{v\in V}c_v$ ($c_v$: tokens of $v$), and book
 fault-free run and report irreversible effects as unrecoverable.
 
 \section{Methodology}
-\para{Workload and design.} Four seeded templates (procurement, payroll, travel booking,
+\para{Original workload.} Four seeded templates (procurement, payroll, travel booking,
 inventory restock) with two seeds each give 8 tasks, averaging 11 units and 12.8K tokens per
 clean run. A reference solver derives the expected final state. The checker verifies payments,
 key--value entries, files and emails, and flags a \emph{safety violation} on any payment or
@@ -100,20 +90,21 @@ giving 176 runs, each with one fault injected after generation.
 \emph{Fact}: closure from corrupted facts to plan steps citing them (declared or value-matched),
 their executors, and readers of the state they wrote.
 
-\para{Counterfactual ground truth.} The API exposes no sampling controls, so responses are
-memoized by prompt hash. In $r'$, units with unchanged inputs return their recorded output, and
+\para{Counterfactual comparison.} Responses are memoized by prompt hash. In $r'$,
+units with unchanged inputs return their recorded output, and
 only units with changed inputs are re-sampled. $\sigma$ keeps tool, target, amount, stored
 value, and the amounts, accounts, addresses and codes in text, discarding paraphrase. Executor
 units are aligned by content before plan position. As a noise control, 16 uncached clean reruns
 differ from the cached run in 0.38 units on average.
 
-\para{Baselines.} \emph{Full restart} restores files and the key--value store, refunds every
-payment, and re-executes. \emph{Always-verify} audits every unit's result with a Haiku
-verifier and retries a flagged unit once without the fault.
+\para{Baselines.} \emph{Full restart} restores files/KV, refunds payments, and re-executes.
+The original \emph{always-verify} experiment audited each output with Haiku, restored the
+pre-injection output when flagged, and estimated retry tokens. The revised harness instead
+makes one actual uncached retry; its results must be reported separately.
 
 \begin{table}[t]
 \centering\small
-\setlength{\tabcolsep}{3.2pt}
+\setlength{\tabcolsep}{2.5pt}
 \begin{tabular}{@{}lcccccc@{}}
 \toprule
 Policy & Prec. & Rec. & Miss & Over & Recomp. & Records \\
@@ -132,22 +123,22 @@ under-invalidation; Over: unaffected units invalidated; Recomp.: cost relative t
 
 \begin{table}[t]
 \centering\small
-\setlength{\tabcolsep}{3.2pt}
+\setlength{\tabcolsep}{2.5pt}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
  & State & Safety viol. & Wrong email & Extra cost \\
  & correct & remaining & remaining & (tokens) \\
 \midrule
 No recovery       & 41\%  & 26\% & 24\% & 0 \\
-Full restart      & 100\% & 7\%  & 24\% & 1.00$\times$/fault \\
-Always-verify     & 100\% & 0\%  & 0\%  & 1.18$\times$/run \\
+Full restart      & 100\% & 7\%  & 24\% & 1.00$\times$ \\
+Verify + restore  & 100\% & 0\%  & 0\%  & 1.18$\times$ \\
 \midrule
-Fact-level (est.) & --    & --   & --   & 0.34$\times$/fault \\
+Fact-level (est.) & --    & --   & --   & 0.34$\times$ \\
 \bottomrule
 \end{tabular}
 \vspace{-0.5em}
-\caption{Baselines over 176 fault runs. State covers payments, key--value entries and files;
-cost is relative to one clean run.}
+\caption{Original cached baselines over 176 fault runs. State excludes email.
+Costs are logical tokens relative to clean execution; verification retry cost was estimated.}
 \label{tab:base}
 \vspace{-1.2em}
 \end{table}
@@ -156,7 +147,7 @@ cost is relative to one clean run.}
 \para{RQ1: Propagation (Fig.~\ref{fig:prop}).} Without recovery, only 39\% of fault runs pass
 the checker. Researcher faults spread farthest (2.3 downstream units) and leave an incorrect,
 unrecallable email in 44\% of runs. 35\% of faults are benign, partly because the model
-\emph{contains} some faults. Instructions injected into researcher output never caused harm, and
+\emph{contains} some faults. Researcher instruction injections caused no attacker-directed actions in this suite, and
 executors corrected wrong amounts and redirects in the plan from the facts they saw.
 Data-shaped attacks were not contained: researcher-level redirects caused a safety violation in
 88\% of runs, and injected plan steps and executor-level redirects in 100\%. Resistance to
@@ -164,7 +155,7 @@ injection thus depends on whether the payload resembles an instruction or data.
 
 \para{RQ2: Granularity (Table~\ref{tab:gran}).} Stage and message tracking never
 under-invalidate, but they discard 6.8 and 4.6 unaffected units per fault and recompute 84\% and
-69\% of a run. Fact tracking keeps $7\times$ more records but recomputes only 34\% at precision
+69\% of a run in predicted token cost. Fact tracking keeps $7\times$ more records but predicts 34\% at precision
 0.86. It under-invalidates in 14 of 176 runs (8\%), almost all of them researcher faults. Three
 causes recur. (i)~\emph{Implicit comparative dependencies}: a corrupted price changes which
 option is cheapest, and steps for the new choice cite only its own facts. (ii)~\emph{Collateral
@@ -175,26 +166,31 @@ units in Phase~2.
 
 \para{RQ3: Baselines (Table~\ref{tab:base}).} Full restart repairs all restorable and
 compensable state. It cannot retract email, leaving incorrect emails in
-24\% of runs (7\% to the attacker) and sending 0.8 duplicates per run. Always-verify caught
-every injected fault before it took effect, but costs 1.18$\times$ on every run, faulty or not,
-with 4.5\% false positives.
+24\% of runs (7\% to the attacker) and sending 0.8 duplicates per run. The original verifier
+detected all injected faults, flagging 4.5\% of non-injected clean-run outputs. Estimated extra
+token cost was 1.18$\times$ on fault runs and 1.04$\times$ on clean runs.
+Output restoration is an optimistic repair model.
 
 \section{Related Work}
-Selective re-execution comes from intrusion recovery~\cite{retro} and rollback
-recovery~\cite{rollback}. We apply it to LLM agents, whose dependencies are semantic and whose
-side effects may be irreversible. Compensation follows sagas~\cite{sagas}, and fact tracking is
-data provenance~\cite{provenance}. Prompt-injection benchmarks~\cite{greshake,agentdojo} and
-multi-agent failure taxonomies~\cite{mast} characterize faults, not recovery. REVISE~\cite{revise}
-and dependency-guided rollback repair~\cite{dgrr} target one agent or user-triggered revisions;
-we target fault-triggered recovery across agents with shared state.
+Selective re-execution follows intrusion/rollback recovery~\cite{retro,rollback}; compensation
+and fact tracking follow sagas and provenance~\cite{sagas,provenance}. Agent security and failure
+studies~\cite{greshake,agentdojo,mast} motivate our injections. REVISE~\cite{revise} addresses
+online revisions, and dependency-guided rollback~\cite{dgrr} repairs faulty persistent memories.
+We examine fault propagation across agents and shared state.
+
+\para{Revised harness.} Appendix~B reports campus-model validation of real retries,
+timing and trace export separately from the original Claude results.
 
 \section{Limitations and Next Steps}
 \emph{Internal validity}: faults are injected into results with an oracle-identified $v_0$;
 the verifier sees inputs contradicting the corrupted result, which favors always-verify; recall
-counts $v_0$; and fact-level cost is estimated from logged tokens. \emph{External validity}: one
-model, synthetic tasks, 16 runs per cell. \emph{Deviation}: a hosted small model replaces local
-CPU models; the response cache supplies the determinism replay needs (total cost
-$\approx$\$0.30). \emph{Phase~2} builds the recovery engine and compares it with full restart, suffix
+counts $v_0$; and fact-level cost is estimated from logged tokens. Changed prompts can still
+resample, so counterfactual comparison is approximate. Fine-grained oracle locations favor
+the fact policy. \emph{External validity}: synthetic tasks and only two task seeds.
+Original Claude raw traces were not committed; their failure explanations remain
+author-reported. The revised harness saves traces, cache hits, versions, failures and wall
+times. Cached replay times are not live API latency. \emph{Phase~2} builds recovery
+and compares it with full restart, suffix
 replay and always-verify under identical fault schedules and budgets.
 
 {\footnotesize
@@ -212,8 +208,10 @@ LLM-integrated applications with indirect prompt injection. \emph{AISec}, 2023.
 \bibitem{agentdojo} E.~Debenedetti et al. AgentDojo: A dynamic environment to evaluate prompt
 injection attacks and defenses for LLM agents. \emph{NeurIPS Datasets and Benchmarks}, 2024.
 \bibitem{mast} M.~Cemri et al. Why do multi-agent LLM systems fail? arXiv:2503.13657, 2025.
-\bibitem{revise} REVISE. arXiv:2609.00643, 2026.
-\bibitem{dgrr} Dependency-guided rollback repair. arXiv:2608.10502, 2026.
+\bibitem{revise} R.~Qi et al. REVISE: Validity-Guided Recovery for Online Revisions in Agent
+Workflows. arXiv:2609.00643, 2026.
+\bibitem{dgrr} Y.~Wang et al. From Faulty Memories to Corrected Actions: Dependency-Guided
+Rollback Repair for Memory-Augmented Agents. arXiv:2608.10502v2, 2026.
 \end{thebibliography}}
 
 \clearpage
@@ -226,10 +224,12 @@ Dates & Milestone \\
 \midrule
 Oct 27--Nov 4 & \textbf{Phase 1 (done):} testbed, 4 task templates, fault injection, tracing at 3 granularities, counterfactual replay, full-restart and always-verify baselines, this report. \\
 Nov 5--16 & Selective recovery engine: per-key restore, targeted refunds, partial re-execution from the trace; oracle fault identity; suffix-replay baseline. \\
-Nov 17--26 & Precision vs.\ bookkeeping study: granularity sweep, comparison-aware citations, re-validating re-sampled outputs; budget-matched comparison of all methods. \\
+Nov 17--26 & Precision vs.\ bookkeeping: comparison-aware citations, re-validating re-sampled outputs, budget-matched baselines; reserve task seeds 2--3 for held-out evaluation. \\
 Nov 27--Dec 3 & Larger suite (more seeds/templates, source-level injections, second model); stretch: recovery after other agents changed shared state post-fault. \\
 Dec 4--10 & Final experiments, figures, final report (due Dec 10). \\
 \bottomrule
 \end{tabular}
+
+\IfFileExists{pilot.tex}{\input{pilot.tex}}{}
 
 \end{document}

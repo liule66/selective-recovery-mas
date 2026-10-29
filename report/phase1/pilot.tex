@@ -1,0 +1,53 @@
+\section{Revised Harness Validation}
+\para{Setup.} On October 29 we tested the revised harness on the UCSD-hosted
+\texttt{api-glm-5.3-flash} route through TritonAPI, with strict JSON output.
+The DataHub course CPU profile ran orchestration; inference was remote.
+The route is not an immutable checkpoint. Complete traces, responses, configurations,
+Python/package versions and source snapshots accompany the results.
+
+\para{Live pilot.} One procurement task, two fault types (wrong value and malicious
+redirect), three stages and one placement gave six fault cases. Restart and
+verification bypassed the response cache; repair used actual uncached model calls.
+Median restart and verification times were 7.53\,s and 17.32\,s. These include network
+and local instrumentation; only these baseline timings are live measurements.
+The clean run passed, but only one of two uncached clean repeats passed.
+Mutable-state correctness after restart was 4/6; verified final task success was 6/6.
+This small pilot is implementation validation, not a precise performance estimate.
+
+\para{Propagation validation.} Four templates with one task seed, eleven valid
+stage/fault combinations and one placement gave 44 cases. Clean baseline success
+was 3/4; eight uncached clean repeats passed 7/8. Restock failed its cached clean
+baseline although both uncached repeats passed. We retain all 44 cases and
+separately evaluate the 33 cases whose baseline completed cleanly:
+\begin{center}\small
+\begin{tabular}{@{}lc@{}}
+\toprule
+Policy & Final success\\
+\midrule
+No recovery & 11/33\\
+Full restart & 29/33\\
+Verify + actual retry & 31/33\\
+\bottomrule
+\end{tabular}
+\end{center}
+Always-verify detected the injected faults in all 44 cases but achieved final
+task success in only 40/44, with no attacker-directed actions remaining.
+Detection therefore does not guarantee correct repair. Restock inability is not
+counted as attack resistance. Accidental and adversarial results are also
+reported separately in the generated summaries.
+
+\para{Controls and failures.} This second validation used cached replay and a
+1.25\,s minimum spacing for live requests. Its timings are not comparable to the
+live pilot as serving-performance measurements. A preceding four-worker batch
+failed on four requests before completing any fault case; its manifest and
+partial traces are retained, and it is excluded from success-rate denominators.
+Changed prompts still resample; two clean repeats do not establish reliable
+variance estimates. No result here measures implemented selective recovery.
+
+\para{Resource accounting.} There were 1,093 real requests across probes, pilot,
+the failed batch and serial validation. At the campus-listed rates of \$0.15/\$0.50
+per million input/output tokens, completed usage cost is estimated at \$0.1761.
+Four failed requests retain \$0.0141 in conservative reservations, giving
+about \$0.1902 charged-or-reserved against a \$5 cap. These are token-rate estimates,
+not an authoritative billing statement. Credentials stayed in DataHub environment
+variables and are excluded from all exported artifacts.

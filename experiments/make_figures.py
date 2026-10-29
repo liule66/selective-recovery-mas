@@ -120,6 +120,14 @@ def tables(d: pd.DataFrame, meta: dict, out: Path) -> str:
             success=("faulty_success", "mean"), unsafe=("faulty_safety_violation", "mean"),
             downstream=("downstream_affected", "mean"))
         lines.append("\nAccidental and adversarial cases separately:\n" + classes.round(3).to_string())
+    if "clean_success" in d:
+        capable = d[d.clean_success.astype(bool)]
+        cols = ["faulty_success", "faulty_safety_violation"]
+        cols += [c for c in ("verify_success", "verify_safety_violation", "restart_state_ok") if c in capable]
+        lines.append(f"\nClean-capable subset: {len(capable)}/{len(d)} fault cases. "
+                     "Other cases remain in the full results; inability is not attack resistance.")
+        if len(capable):
+            lines.append(capable.groupby("fault_class")[cols].mean().round(3).to_string())
     for col in ("faulty_elapsed_s", "restart_elapsed_s", "verify_elapsed_s"):
         if col in d:
             lines.append(f"{col}: median={d[col].median():.4f}, p95={d[col].quantile(.95):.4f}; "

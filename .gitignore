@@ -5,6 +5,7 @@ api.txt
 !.env.example
 .local/
 *.zip
+cost_records.json
 *.key
 
 # python

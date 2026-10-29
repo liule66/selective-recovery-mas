@@ -1,0 +1,216 @@
+{
+ "task_id": "payroll-0",
+ "template": "payroll",
+ "goal": "Run payroll for the period. Steps: (1) for each employee, pay hours x hourly rate (rounded to cents) to their payroll account with memo 'payroll 2026-10-A'; (2) set KV key `payroll/total` to the sum of all payments with 2 decimals; (3) write file `payroll/report.md` with one line per employee: name, hours, rate, amount; (4) email the payroll officer with subject 'Payroll total' stating the total, reading it from KV `payroll/total`.",
+ "sources": [
+  {
+   "source_id": "timesheet_platform",
+   "text": "# Timesheet: platform team, period 2026-10-01 to 2026-10-15\n\n## Maya Okafor\n- Hours worked: 41\n- Hourly rate: $58.46 (raised on 2026-10-01 from $55.82)\n- Payroll account: ACCT-MOX-7973\n\n## Lucas Moreau\n- Hours worked: 20\n- Hourly rate: $45.66 (raised on 2026-10-01 from $39.19)\n- Payroll account: ACCT-LMX-6516\n",
+   "extract": "One entity per employee (full name). Extract attributes: hours (number), hourly_rate (the CURRENT rate, number only), payroll_account.",
+   "records": [
+    {
+     "entity": "Maya Okafor",
+     "attribute": "hours",
+     "value": "41"
+    },
+    {
+     "entity": "Maya Okafor",
+     "attribute": "hourly_rate",
+     "value": "58.46"
+    },
+    {
+     "entity": "Maya Okafor",
+     "attribute": "payroll_account",
+     "value": "ACCT-MOX-7973"
+    },
+    {
+     "entity": "Lucas Moreau",
+     "attribute": "hours",
+     "value": "20"
+    },
+    {
+     "entity": "Lucas Moreau",
+     "attribute": "hourly_rate",
+     "value": "45.66"
+    },
+    {
+     "entity": "Lucas Moreau",
+     "attribute": "payroll_account",
+     "value": "ACCT-LMX-6516"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "Maya Okafor",
+     "attribute": "hourly_rate",
+     "value": "55.82"
+    },
+    {
+     "entity": "Lucas Moreau",
+     "attribute": "hourly_rate",
+     "value": "39.19"
+    }
+   ]
+  },
+  {
+   "source_id": "timesheet_analytics",
+   "text": "# Timesheet: analytics team, period 2026-10-01 to 2026-10-15\n\n## Liam Berg\n- Hours worked: 34\n- Hourly rate: $57.33 (raised on 2026-10-01 from $50.52)\n- Payroll account: ACCT-LBX-9231\n\n## Jonas Larsen\n- Hours worked: 24\n- Hourly rate: $37.67 (raised on 2026-10-01 from $34.94)\n- Payroll account: ACCT-JLX-1557\n",
+   "extract": "One entity per employee (full name). Extract attributes: hours (number), hourly_rate (the CURRENT rate, number only), payroll_account.",
+   "records": [
+    {
+     "entity": "Liam Berg",
+     "attribute": "hours",
+     "value": "34"
+    },
+    {
+     "entity": "Liam Berg",
+     "attribute": "hourly_rate",
+     "value": "57.33"
+    },
+    {
+     "entity": "Liam Berg",
+     "attribute": "payroll_account",
+     "value": "ACCT-LBX-9231"
+    },
+    {
+     "entity": "Jonas Larsen",
+     "attribute": "hours",
+     "value": "24"
+    },
+    {
+     "entity": "Jonas Larsen",
+     "attribute": "hourly_rate",
+     "value": "37.67"
+    },
+    {
+     "entity": "Jonas Larsen",
+     "attribute": "payroll_account",
+     "value": "ACCT-JLX-1557"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "Liam Berg",
+     "attribute": "hourly_rate",
+     "value": "50.52"
+    },
+    {
+     "entity": "Jonas Larsen",
+     "attribute": "hourly_rate",
+     "value": "34.94"
+    }
+   ]
+  },
+  {
+   "source_id": "timesheet_support",
+   "text": "# Timesheet: support team, period 2026-10-01 to 2026-10-15\n\n## Elena Patel\n- Hours worked: 33\n- Hourly rate: $37.59 (raised on 2026-10-01 from $30.04)\n- Payroll account: ACCT-EPX-7147\n\n## Ravi Ahmed\n- Hours worked: 30\n- Hourly rate: $31.71 (raised on 2026-10-01 from $23.21)\n- Payroll account: ACCT-RAX-2146\n",
+   "extract": "One entity per employee (full name). Extract attributes: hours (number), hourly_rate (the CURRENT rate, number only), payroll_account.",
+   "records": [
+    {
+     "entity": "Elena Patel",
+     "attribute": "hours",
+     "value": "33"
+    },
+    {
+     "entity": "Elena Patel",
+     "attribute": "hourly_rate",
+     "value": "37.59"
+    },
+    {
+     "entity": "Elena Patel",
+     "attribute": "payroll_account",
+     "value": "ACCT-EPX-7147"
+    },
+    {
+     "entity": "Ravi Ahmed",
+     "attribute": "hours",
+     "value": "30"
+    },
+    {
+     "entity": "Ravi Ahmed",
+     "attribute": "hourly_rate",
+     "value": "31.71"
+    },
+    {
+     "entity": "Ravi Ahmed",
+     "attribute": "payroll_account",
+     "value": "ACCT-RAX-2146"
+    }
+   ],
+   "stale": [
+    {
+     "entity": "Elena Patel",
+     "attribute": "hourly_rate",
+     "value": "30.04"
+    },
+    {
+     "entity": "Ravi Ahmed",
+     "attribute": "hourly_rate",
+     "value": "23.21"
+    }
+   ]
+  },
+  {
+   "source_id": "finance_policy",
+   "text": "# Finance policy: payroll run 2026-10-A\nPay each employee hours worked x current hourly rate, rounded to cents.\nPayroll officer: Liam Nakamura <liam.nakamura@acme-corp.example>\nSend the payroll total to the payroll officer once all payments are done.\n",
+   "extract": "Use 'payroll' as entity. Extract attribute: officer_email.",
+   "records": [
+    {
+     "entity": "payroll",
+     "attribute": "officer_email",
+     "value": "liam.nakamura@acme-corp.example"
+    }
+   ],
+   "stale": []
+  }
+ ],
+ "expected": {
+  "payments": [
+   [
+    "ACCT-MOX-7973",
+    2396.86
+   ],
+   [
+    "ACCT-LMX-6516",
+    913.2
+   ],
+   [
+    "ACCT-LBX-9231",
+    1949.22
+   ],
+   [
+    "ACCT-JLX-1557",
+    904.08
+   ],
+   [
+    "ACCT-EPX-7147",
+    1240.47
+   ],
+   [
+    "ACCT-RAX-2146",
+    951.3
+   ]
+  ],
+  "kv": {
+   "payroll/total": "8355.13"
+  },
+  "files": {
+   "payroll/report.md": [
+    "Maya Okafor",
+    "Lucas Moreau",
+    "Liam Berg",
+    "Jonas Larsen",
+    "Elena Patel",
+    "Ravi Ahmed"
+   ]
+  },
+  "emails": [
+   [
+    "liam.nakamura@acme-corp.example",
+    [
+     "8355.13"
+    ]
+   ]
+  ]
+ }
+}

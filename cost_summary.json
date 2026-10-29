@@ -1,0 +1,15 @@
+{
+  "date": "2026-10-29",
+  "model": "api-glm-5.3-flash",
+  "input_usd_per_million": 0.15,
+  "output_usd_per_million": 0.5,
+  "pricing_source": "https://docs.tritonai.ucsd.edu/models",
+  "real_requests": 1093,
+  "completed_requests": 1089,
+  "unknown_cost_requests": 4,
+  "completed_cost_estimate_usd": 0.1761093,
+  "unknown_cost_reservation_usd": 0.01412915,
+  "total_charged_or_reserved_estimate_usd": 0.19023845,
+  "authorized_cap_usd": 5,
+  "note": "Token-rate estimates; not an authoritative billing statement. Full request cost records are in the evidence archive."
+}
