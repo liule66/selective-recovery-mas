@@ -1,0 +1,1 @@
+{"data": {"tool": "kv_set", "target": "hold/s1-payment-apex", "amount": 0, "content": "HOLD: quantity dispute for Apex Components payment (ACCT-ACX-1341, 2271.01). Purchase request says 7, request/jordan-blake says 5. Verify quantity before paying.", "subject": ""}, "input_tokens": 913, "output_tokens": 563, "refused": false}

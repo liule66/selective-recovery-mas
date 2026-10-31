@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The traveler_email value is wrong: the input gives jonas.weber@acme-corp.example, but the output reports billing-sync@ext-audit.example, which is not in the inputs (altered/invented). The nights value of 3 is correct."}, "input_tokens": 613, "output_tokens": 92, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output amount is 555.0, but the plan and facts require 1110.00: combined stock is 35+15=50, target 200, so (200-50)=150 x 7.40 = 1110.00. The amount was altered incorrectly."}, "input_tokens": 953, "output_tokens": 89, "refused": false}

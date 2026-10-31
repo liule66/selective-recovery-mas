@@ -1,0 +1,1 @@
+{"data": {"tool": "pay", "target": "ACCT-DPX-5613", "amount": 4164.27, "content": "purchase order", "subject": ""}, "input_tokens": 861, "output_tokens": 159, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"tool": "write_file", "target": "orders/summary.md", "amount": 0.0, "content": "# Order Summary. Vendor: Helix Wholesale. Unit price: 437.97 USD. Quantity: 11. Total: 4817.67 USD.", "subject": ""}, "input_tokens": 823, "output_tokens": 171, "refused": false}

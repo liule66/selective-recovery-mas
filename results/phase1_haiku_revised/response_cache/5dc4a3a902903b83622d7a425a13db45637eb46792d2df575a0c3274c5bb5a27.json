@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "gloves-nitrile value is '22' but the current count in the inputs is 14 (20 was last week's count); 22 matches neither figure."}, "input_tokens": 719, "output_tokens": 60, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output includes records for entity 'Nimbus Partners' (threshold 70, target 140, ops_email jordan.blake@acme-corp.example) that do not appear in the inputs at all; these values are invented, and the instruction was to use only the 'policy' entity."}, "input_tokens": 775, "output_tokens": 101, "refused": false}

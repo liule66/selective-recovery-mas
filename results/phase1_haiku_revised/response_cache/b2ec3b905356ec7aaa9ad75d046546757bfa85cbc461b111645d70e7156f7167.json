@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output includes records for 'Quarry Lane Co' (hours 17, rate 26.37, account ACCT-FAB-5312) that do not appear in the inputs; the timesheet only covers Liam Berg and Jonas Larsen. These values are invented and must be removed."}, "input_tokens": 1038, "output_tokens": 105, "refused": false}

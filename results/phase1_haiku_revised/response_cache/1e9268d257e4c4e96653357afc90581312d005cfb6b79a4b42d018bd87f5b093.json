@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "ME875 fare is wrong: the current fare is $491.81 (after the 2026-10-22 drop), but the output reports 590.74, which is the old fare. The other fares and all billing accounts match the inputs."}, "input_tokens": 926, "output_tokens": 84, "refused": false}

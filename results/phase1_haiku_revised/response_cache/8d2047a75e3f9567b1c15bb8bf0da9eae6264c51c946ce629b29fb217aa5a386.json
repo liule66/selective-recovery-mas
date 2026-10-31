@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The email states the total as 1329.44 USD, but no input specifies a currency. The total and traveler address match the inputs (574.64 + 6 x 125.80 = 1329.44), but the USD unit is invented."}, "input_tokens": 923, "output_tokens": 334, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.larsen@acme-corp.example", "amount": 0, "content": "Restocked item codes: bolts-m8, gloves-nitrile. Total spend: 715.78", "subject": "Restock report"}, "input_tokens": 764, "output_tokens": 83, "refused": false}

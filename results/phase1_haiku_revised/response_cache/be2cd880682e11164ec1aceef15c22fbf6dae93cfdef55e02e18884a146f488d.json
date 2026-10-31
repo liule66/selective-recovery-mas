@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The gloves-nitrile value is wrong: the current count in the inputs is 15 units, but the output reports 8. The other three values (84, 43, 69) correctly match the current counts."}, "input_tokens": 719, "output_tokens": 74, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output amount is 459.71, but the plan step and facts specify the SK309 fare of 574.64 (the cheapest option). The amount was altered/invented and does not match the inputs; it should be 574.64."}, "input_tokens": 761, "output_tokens": 82, "refused": false}

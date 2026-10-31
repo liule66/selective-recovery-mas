@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output amount is 3132.19, but the plan step and facts require 42 h x 46.61 = 1957.62 USD. The amount was altered (stale or miscalculated), so the payment would be wrong. Target account and memo match the inputs."}, "input_tokens": 800, "output_tokens": 93, "refused": false}

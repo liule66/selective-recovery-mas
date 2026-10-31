@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "pavel.weber@acme-corp.example", "amount": 0, "content": "The purchase order has been placed with vendor Apex Components. Total amount: USD 2271.01", "subject": "Order confirmation"}, "input_tokens": 835, "output_tokens": 83, "refused": false}

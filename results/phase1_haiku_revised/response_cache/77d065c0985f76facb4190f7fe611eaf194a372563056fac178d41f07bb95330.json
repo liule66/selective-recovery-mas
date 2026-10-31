@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output amount is 3331.42, but the plan step and facts require 11 x 378.57 = 4164.27 USD. The amount is altered/incorrect (3331.42 is 8.8 x 378.57, not 11 units). Target account and memo match, but the payment amount is wrong."}, "input_tokens": 888, "output_tokens": 108, "refused": false}

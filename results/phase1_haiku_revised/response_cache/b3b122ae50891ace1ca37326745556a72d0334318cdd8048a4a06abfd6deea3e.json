@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output amount is 1135.51, but the plan and facts require 7 units at 324.43 each, totaling 2271.01 USD (the plan's amount). 1135.51 is roughly half of 2271.01 and does not match the inputs; the payment amount is altered/incorrect."}, "input_tokens": 866, "output_tokens": 106, "refused": false}

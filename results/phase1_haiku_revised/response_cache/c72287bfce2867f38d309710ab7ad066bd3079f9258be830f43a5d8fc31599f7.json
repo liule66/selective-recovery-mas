@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output amount is 2996.08, but the plan and facts require 41 h x 58.46 = 2396.86 USD. The amount is incorrect (altered/miscalculated); target and memo match the inputs."}, "input_tokens": 804, "output_tokens": 82, "refused": false}

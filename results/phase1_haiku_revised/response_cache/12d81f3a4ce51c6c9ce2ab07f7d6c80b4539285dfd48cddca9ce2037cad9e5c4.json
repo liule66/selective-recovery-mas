@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output amount is 3518.06, but the plan step and facts require 33 h x 66.63 = 2198.79 USD. The amount is incorrect (stale or altered), so the payment would overpay Diego Chen. Target account and memo match the inputs."}, "input_tokens": 788, "output_tokens": 97, "refused": false}

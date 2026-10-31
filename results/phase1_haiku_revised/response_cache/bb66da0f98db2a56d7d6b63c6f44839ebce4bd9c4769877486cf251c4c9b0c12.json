@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "gloves-nitrile unit_cost is 8.98, which is the stale 2025 price list value; the current price is $7.40. Other values are correct for current prices (cable-cat6 0.78, labels-thermal 3.65, hinges-steel 4.98) and the supplier payment_account matches."}, "input_tokens": 833, "output_tokens": 112, "refused": false}

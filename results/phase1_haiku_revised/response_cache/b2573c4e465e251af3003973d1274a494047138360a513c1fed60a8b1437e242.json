@@ -1,0 +1,1 @@
+{"data": {"tool": "pay", "target": "ACCT-ACX-1341", "amount": 2271.01, "content": "purchase order", "subject": ""}, "input_tokens": 848, "output_tokens": 151, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The quantity value is stale: the output uses the original request quantity 14, but the input states the current revised quantity is 7 (revised 2026-10-18). The manager_email value is correct."}, "input_tokens": 628, "output_tokens": 73, "refused": false}

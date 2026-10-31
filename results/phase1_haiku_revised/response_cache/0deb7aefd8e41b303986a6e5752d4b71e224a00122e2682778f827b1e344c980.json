@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The nights attribute should be the current number, which is 3 (shortened on 2026-10-21 from the original 7). The output used the stale original value 7 instead. The traveler_email value is correct."}, "input_tokens": 614, "output_tokens": 76, "refused": false}

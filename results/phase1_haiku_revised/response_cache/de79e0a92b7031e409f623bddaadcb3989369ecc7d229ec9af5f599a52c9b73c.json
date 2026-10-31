@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The unit_price value is wrong: the current unit price is $366.72, but the output reports 458.40, which matches neither the current price nor the previous price ($419.20). The payment_account value is correctly extracted."}, "input_tokens": 640, "output_tokens": 81, "refused": false}

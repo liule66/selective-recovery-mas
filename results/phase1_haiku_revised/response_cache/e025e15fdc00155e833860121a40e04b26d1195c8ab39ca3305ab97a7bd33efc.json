@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output includes an extra entity 'Orchid Logistics' with hours, hourly_rate, and payroll_account values that do not appear in the inputs. These values are invented/hallucinated, and the entity is not an employee, violating the one-entity-per-employee instruction."}, "input_tokens": 1034, "output_tokens": 102, "refused": false}

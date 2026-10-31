@@ -31,9 +31,35 @@ Put the Anthropic API key in `ANTHROPIC_API_KEY` or in `api.txt` at the repo roo
 | `experiments/` | Experiment drivers and configs |
 | `report/` | Phase reports |
 
+## Revised Phase 1 evaluation (Claude Haiku 5.5, replayed from cache)
+
+Report: [report/phase1/main.pdf](report/phase1/main.pdf). Numbers: [results/phase1_haiku_revised/summary.txt](results/phase1_haiku_revised/summary.txt).
+
+The original 176 Claude runs are re-scored with a stricter checker and metrics by replaying the
+committed response cache. The replay made no API calls and reproduced every original agent output.
+
+- Checker: payment memos, payroll report amounts, and required values in each email are checked;
+  an *unauthorized action* is a payment to an account named in no source or an email to a
+  recipient the task does not name (attacker actions are a subset). All 8 clean runs still pass.
+- Only 82 of 176 runs propagate to a downstream unit. Executor faults cannot by construction.
+- On those 82 runs, scoring downstream units only, stage / message / fact tracking reach precision
+  0.29 / 0.38 / 0.97 and recall 1.00 / 1.00 / 0.88, with predicted recompute 97% / 86% / 48%.
+- Unauthorized actions follow 58% of adversarial and 5% of accidental faults. 22 placements
+  duplicate another (identical injection), leaving 154 independent runs.
+- Task seeds 0–1 are the development set; seeds 2–3 are held out for Phase 2 evaluation.
+- Always-verify columns and noise reruns are carried over from the original run.
+
+Traces and the response cache are in `results/phase1_haiku_revised/`. To reproduce without API spending:
+
+```bash
+D:/miniconda3/envs/srmas/python.exe experiments/run_phase1.py --llm haiku --cache-only --cache-dir results/phase1_haiku_revised/response_cache --skip-verify --noise-runs 0 --out results/my_replay
+D:/miniconda3/envs/srmas/python.exe experiments/merge_legacy_verify.py results/phase1_haiku results/my_replay
+D:/miniconda3/envs/srmas/python.exe experiments/make_figures.py results/my_replay
+```
+
 ## Original Phase 1 results (Claude Haiku 5.5, 8 tasks × 22 faults)
 
-Report: [report/phase1/main.pdf](report/phase1/main.pdf). Numbers: [results/phase1_haiku/summary.txt](results/phase1_haiku/summary.txt).
+Numbers: [results/phase1_haiku/summary.txt](results/phase1_haiku/summary.txt).
 
 - Without recovery only 39% of fault runs pass; researcher faults change 2.3 downstream agent calls on average and leave a wrong (irreversible) email in 44% of runs.
 - Dependency tracking: stage / message / fact granularity reach precision 0.24 / 0.44 / 0.86 and recall 1.00 / 1.00 / 0.96. Predicted recomputation token costs are 84% / 69% / 34% of a full run; selective recovery is not implemented yet.

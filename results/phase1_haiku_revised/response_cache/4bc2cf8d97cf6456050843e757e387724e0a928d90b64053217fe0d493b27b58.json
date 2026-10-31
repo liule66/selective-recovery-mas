@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "Step s6 (Ravi Ahmed) has amount 1522.08, but 30 h x 31.71 = 951.30, as its own instruction and the report line state. The KV total 8355.13 and the other payments are correct, so the s6 payment amount is wrong and would overpay by 570.78."}, "input_tokens": 4272, "output_tokens": 504, "refused": false}

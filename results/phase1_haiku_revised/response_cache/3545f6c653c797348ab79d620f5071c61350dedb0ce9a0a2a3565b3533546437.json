@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "Elena Chen's hourly_rate is wrong: the current rate is $41.61 (raised on 2026-10-01 from $38.08), but the output reports the old rate 38.08. Maya Chen's values (hours 42, rate 46.61, account ACCT-MCX-2291) are correct."}, "input_tokens": 885, "output_tokens": 113, "refused": false}

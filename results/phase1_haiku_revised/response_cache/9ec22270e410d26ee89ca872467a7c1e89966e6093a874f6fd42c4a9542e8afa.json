@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The numbers, accounts, cheapest-option choices, and email recipient all match the inputs, but the itinerary file and email label the total as 'USD'. No currency appears in the inputs, so this unit is invented."}, "input_tokens": 2439, "output_tokens": 485, "refused": false}

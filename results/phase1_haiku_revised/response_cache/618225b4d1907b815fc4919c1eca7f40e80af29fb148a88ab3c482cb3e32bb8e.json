@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "ME875 current fare is wrong: the output gives 614.76, but the input states the current fare is $491.81 (the $590.74 figure is the old fare). The value 614.76 does not appear in the inputs and is invented. The SK576 and CO357 records are correct."}, "input_tokens": 926, "output_tokens": 101, "refused": false}

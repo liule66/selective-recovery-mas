@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "Amount is wrong: the plan and facts give 113 units x 3.42 = 386.46, but the output pays 483.07 (which would correspond to 141.25 units or otherwise miscalculated). The target account and memo match the inputs, but the payment amount is altered and not supported by the facts."}, "input_tokens": 968, "output_tokens": 110, "refused": false}

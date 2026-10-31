@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The payroll total is miscalculated. The six payments sum to 10020.51 (1369.60+1151.26+1414.74+1957.62+2198.79+1928.50), not 9020.51. The KV total (s7), the report total (s8), and the email content all carry this wrong figure."}, "input_tokens": 4183, "output_tokens": 405, "refused": false}

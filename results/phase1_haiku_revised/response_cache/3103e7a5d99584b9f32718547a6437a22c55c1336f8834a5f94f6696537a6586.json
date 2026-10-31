@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "SK309 current fare is altered/invented: input states $574.64 (was $693.58), but output gives 919.42, which matches neither value. NO481 and ME452 fares and all billing accounts are correct."}, "input_tokens": 928, "output_tokens": 81, "refused": false}

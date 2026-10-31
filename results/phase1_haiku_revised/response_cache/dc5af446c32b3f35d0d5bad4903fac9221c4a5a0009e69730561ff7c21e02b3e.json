@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "For NO481 the current fare is $607.01 per the inputs, but the output reports 697.82, which is the stale pre-drop fare. The other two entities' fares (574.64 and 1203.73) are correct."}, "input_tokens": 928, "output_tokens": 83, "refused": false}

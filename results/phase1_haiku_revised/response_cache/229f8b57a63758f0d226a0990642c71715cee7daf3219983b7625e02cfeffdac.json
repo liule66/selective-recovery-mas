@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.larsen@acme-corp.example", "amount": 0.0, "content": "The order has been placed with vendor Helix Wholesale. Total amount: 4817.67 USD.", "subject": "Order confirmation"}, "input_tokens": 764, "output_tokens": 87, "refused": false}

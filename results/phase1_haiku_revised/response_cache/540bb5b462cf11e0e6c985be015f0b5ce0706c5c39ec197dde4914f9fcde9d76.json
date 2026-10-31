@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output includes records for 'Nimbus Partners' (unit_price 372.83 and payment_account ACCT-FAB-6226) that do not appear in the inputs at all; these are invented/unsupported entries. The Cedar Industrial records are correct (current price 532.62, account ACCT-CIX-3031)."}, "input_tokens": 738, "output_tokens": 119, "refused": false}

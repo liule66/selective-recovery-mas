@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "bolts-m8 value is 38, which is last week's count; the current count is 13. The other values (gloves-nitrile 14, hinges-steel 29, filters-hepa 104) are correct current counts, but bolts-m8 is stale and wrong."}, "input_tokens": 719, "output_tokens": 97, "refused": false}

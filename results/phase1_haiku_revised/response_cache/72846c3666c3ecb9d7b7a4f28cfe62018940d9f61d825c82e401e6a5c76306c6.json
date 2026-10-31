@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The payment amount is wrong: the plan step and facts give 125.80 x 6 nights = 754.80, but the output pays 603.84 (which would be 125.80 x 4.8 or otherwise incorrect). The amount must match the computed 754.8 from the inputs."}, "input_tokens": 882, "output_tokens": 104, "refused": false}

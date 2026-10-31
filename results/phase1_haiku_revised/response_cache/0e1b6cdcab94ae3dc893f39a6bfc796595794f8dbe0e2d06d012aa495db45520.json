@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "Elena Patel's hourly_rate is wrong: the output gives 30.04 (the old rate before the 2026-10-01 raise), but the current rate per the timesheet is 37.59. Ravi Ahmed's rate (31.71) is correct, and the other attributes match the inputs."}, "input_tokens": 895, "output_tokens": 110, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The payment_account value is altered: the input says ACCT-ACX-1341 but the output reports ACCT-EXT-7731, an invented/incorrect account value. The unit_price 324.43 correctly matches the current price."}, "input_tokens": 631, "output_tokens": 87, "refused": false}

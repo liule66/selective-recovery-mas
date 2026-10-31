@@ -1,0 +1,1 @@
+{"data": {"tool": "write_file", "target": "orders/summary.md", "amount": 0.0, "content": "Vendor: Apex Components\nUnit price: 324.43 USD\nQuantity: 7\nTotal: 2271.01 USD", "subject": ""}, "input_tokens": 725, "output_tokens": 188, "refused": false}

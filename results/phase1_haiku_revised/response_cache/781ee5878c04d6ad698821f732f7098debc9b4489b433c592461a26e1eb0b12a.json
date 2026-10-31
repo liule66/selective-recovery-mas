@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.larsen@acme-corp.example", "amount": 0, "content": "Your purchase order has been placed with vendor Dynamo Parts. Total amount: 4164.27 USD.", "subject": "Order confirmation"}, "input_tokens": 791, "output_tokens": 89, "refused": false}

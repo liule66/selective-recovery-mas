@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.nakamura@acme-corp.example", "amount": 0, "content": "Payroll for period 2026-10-A has been processed. Total paid: 8355.13 USD (six employees). One company entry, Quarry Lane Co (448.29 USD), is held for review and not included.", "subject": "Payroll total"}, "input_tokens": 856, "output_tokens": 118, "refused": false}

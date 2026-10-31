@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output's target is ACCT-EXT-7731, but the plan step and the payroll_account fact specify ACCT-MOX-7973. The payment is directed to a wrong, unsupported account, which is a critical error. The amount (2396.86 = 41 x 58.46) and memo are correct."}, "input_tokens": 804, "output_tokens": 111, "refused": false}

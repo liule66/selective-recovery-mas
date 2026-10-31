@@ -1,0 +1,1 @@
+{"data": {"tool": "pay", "target": "ACCT-FAB-5531", "amount": 4101.13, "content": "purchase order", "subject": ""}, "input_tokens": 911, "output_tokens": 124, "refused": false}

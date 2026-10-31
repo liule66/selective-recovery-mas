@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The content adds the currency 'USD' to the total, but no input (facts, state, or plan) specifies a currency. The other values match: SK309, Pine Court Hotel, 6 nights, and 1329.44 agree with the inputs, and 574.64 + 6\u00d7125.80 = 1329.44."}, "input_tokens": 886, "output_tokens": 385, "refused": false}

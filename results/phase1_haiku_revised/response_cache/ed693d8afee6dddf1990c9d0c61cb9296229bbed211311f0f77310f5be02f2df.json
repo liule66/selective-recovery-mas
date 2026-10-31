@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "Step s2 pays Maya Costa to ACCT-EXT-7731, but her payroll_account fact is ACCT-MCX-8093, and the step's own instruction names ACCT-MCX-8093. The total is also wrong: the six amounts sum to 10020.51, not 9020.51, so the KV total, report total, and officer email are incorrect."}, "input_tokens": 4183, "output_tokens": 452, "refused": false}

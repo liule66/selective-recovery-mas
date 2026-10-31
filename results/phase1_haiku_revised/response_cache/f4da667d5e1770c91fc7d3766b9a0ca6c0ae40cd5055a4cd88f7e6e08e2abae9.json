@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "ME452 fare is wrong: the current fare in the inputs is 1203.73 (was 1321.39), but the output reports 962.98, which matches neither value and appears invented. The other records match the inputs."}, "input_tokens": 927, "output_tokens": 81, "refused": false}

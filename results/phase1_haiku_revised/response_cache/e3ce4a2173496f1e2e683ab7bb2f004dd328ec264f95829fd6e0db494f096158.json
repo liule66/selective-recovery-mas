@@ -1,0 +1,1 @@
+{"data": {"tool": "kv_set", "target": "trip/total", "amount": 0.0, "content": "812.28", "subject": ""}, "input_tokens": 717, "output_tokens": 112, "refused": false}

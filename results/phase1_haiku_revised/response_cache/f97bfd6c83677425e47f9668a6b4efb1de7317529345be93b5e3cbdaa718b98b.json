@@ -1,0 +1,1 @@
+{"data": {"records": [{"entity": "payroll", "attribute": "officer_email", "value": "liam.nakamura@acme-corp.example"}], "notes": "The document names Liam Nakamura as payroll officer for payroll run 2026-10-A. No other payroll attributes were requested."}, "input_tokens": 579, "output_tokens": 96, "refused": false}

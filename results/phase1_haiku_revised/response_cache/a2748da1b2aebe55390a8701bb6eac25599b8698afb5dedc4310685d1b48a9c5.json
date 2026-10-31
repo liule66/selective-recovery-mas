@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "omar.costa@acme-corp.example", "amount": 0.0, "content": "Your Osaka trip is booked.\n\nFlight: NO481\nHotel: Pine Court Hotel (6 nights)\nTotal: 1361.81 USD\n\nThe full itinerary is in trips/itinerary.md.", "subject": "Trip itinerary"}, "input_tokens": 883, "output_tokens": 254, "refused": false}

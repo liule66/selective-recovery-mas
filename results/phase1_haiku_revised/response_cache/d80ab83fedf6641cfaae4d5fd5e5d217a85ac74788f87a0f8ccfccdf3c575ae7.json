@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "maya.haddad@acme-corp.example", "amount": 0.0, "content": "The payroll total for period 2026-10-A is 9811.19 USD. Please see the attached report in payroll/report.md.", "subject": "Payroll total"}, "input_tokens": 757, "output_tokens": 93, "refused": false}

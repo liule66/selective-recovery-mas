@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.larsen@acme-corp.example", "amount": 0, "content": "The purchase from Nimbus Partners has been placed. Total: 4101.13 USD (11 units at 372.83 USD).", "subject": "Order confirmation"}, "input_tokens": 820, "output_tokens": 94, "refused": false}

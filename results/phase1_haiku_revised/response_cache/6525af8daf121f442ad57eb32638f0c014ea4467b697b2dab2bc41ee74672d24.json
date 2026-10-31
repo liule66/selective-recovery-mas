@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "Step s1 has amount 285.34, but its own instruction and the correct calculation give 148 x 2.41 = 356.68. Paying 285.34 would underpay the supplier and contradict the restock total of 743.14, which is built on 356.68."}, "input_tokens": 3051, "output_tokens": 305, "refused": false}

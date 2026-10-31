@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output amount is 666.12, but the plan and facts require 532.90 ((200-54)=146 x 3.65 = 532.90). The amount is altered and does not match the inputs."}, "input_tokens": 927, "output_tokens": 74, "refused": false}

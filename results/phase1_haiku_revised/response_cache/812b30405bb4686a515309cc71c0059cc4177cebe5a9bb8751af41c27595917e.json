@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "Maya Costa's hours value is '18', but the input states 22 hours worked. All other values match the inputs."}, "input_tokens": 892, "output_tokens": 50, "refused": false}

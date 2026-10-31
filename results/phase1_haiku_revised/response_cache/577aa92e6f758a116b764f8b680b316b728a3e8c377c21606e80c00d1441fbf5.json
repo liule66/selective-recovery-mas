@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "Amount is wrong: the plan and facts give 148 units x 2.41 = 356.68 USD, but the output pays 178.34 USD (which would be 74 units x 2.41). Stock is 13+39=52, target 200, so need 148; the output amount does not match the inputs."}, "input_tokens": 941, "output_tokens": 107, "refused": false}

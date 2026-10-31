@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "bolts-m8 unit_cost is 2.55, which is the stale 2025 price list value; the current price is $2.41. The other item values (3.42, 6.27, 5.16) correctly match current prices and the payment account is correct."}, "input_tokens": 835, "output_tokens": 90, "refused": false}

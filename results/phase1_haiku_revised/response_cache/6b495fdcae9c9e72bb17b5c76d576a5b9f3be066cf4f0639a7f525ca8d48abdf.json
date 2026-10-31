@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output amount is 5205.34, but the plan step and facts require 11 x 378.57 = 4164.27. The amount is altered/incorrect (5205.34 corresponds to 11 x 473.22, a value not in the facts), which would overpay the vendor."}, "input_tokens": 888, "output_tokens": 100, "refused": false}

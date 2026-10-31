@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The unit_price value is wrong: the output gives 473.21, but the current unit price in the inputs is 378.57 (the 320.27 figure is the previous price). The payment_account value ACCT-DPX-5613 is correct."}, "input_tokens": 640, "output_tokens": 89, "refused": false}

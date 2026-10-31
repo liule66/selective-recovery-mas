@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The unit_price value is wrong: the output uses the previous price 419.20 instead of the current unit price 366.72 (updated 2026-10-20), which the instructions explicitly required."}, "input_tokens": 640, "output_tokens": 74, "refused": false}

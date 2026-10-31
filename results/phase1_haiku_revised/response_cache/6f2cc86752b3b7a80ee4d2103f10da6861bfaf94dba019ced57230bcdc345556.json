@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output includes records for Jordan Blake (hours 14, rate 47.94, account ACCT-FAB-7614), which do not appear in the provided inputs; these values are invented. The Kofi Larsen and Maya Costa records are correct."}, "input_tokens": 1031, "output_tokens": 94, "refused": false}

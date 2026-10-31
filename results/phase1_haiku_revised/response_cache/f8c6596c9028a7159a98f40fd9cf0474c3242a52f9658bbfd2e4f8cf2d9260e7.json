@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output amount is 387.24, but the plan step and facts specify the CO357 fare of 484.05 USD. The amount was altered and does not match the input facts."}, "input_tokens": 778, "output_tokens": 66, "refused": false}

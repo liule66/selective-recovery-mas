@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The output includes an extra entity 'Orchid Logistics' with nightly_rate 76.59 and billing_account ACCT-FAB-1095, which does not appear in the inputs. These values are invented/not sourced from the input, and the entity is not a hotel option in the provided data."}, "input_tokens": 1029, "output_tokens": 106, "refused": false}

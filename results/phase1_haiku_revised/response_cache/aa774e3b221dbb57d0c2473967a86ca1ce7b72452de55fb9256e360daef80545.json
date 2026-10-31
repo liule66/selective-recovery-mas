@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "The Linden's billing_account is wrong: the input says ACCT-TLX-5084, but the output reports ACCT-EXT-7731, which is not in the inputs (altered/invented value). The nightly rates correctly use the current season rates."}, "input_tokens": 932, "output_tokens": 93, "refused": false}

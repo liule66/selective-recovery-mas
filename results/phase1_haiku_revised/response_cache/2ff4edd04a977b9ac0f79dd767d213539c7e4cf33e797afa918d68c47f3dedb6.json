@@ -1,0 +1,1 @@
+{"data": {"ok": false, "issue": "bolts-m8 value is '16' but the input states 13 units on hand (current count); 16 is incorrect and appears invented or altered. The other values (14, 29, 104) match the current counts."}, "input_tokens": 719, "output_tokens": 77, "refused": false}
