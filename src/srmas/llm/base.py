@@ -43,6 +43,10 @@ class LLMStats:
         return {k: v for k, v in self.__dict__.items() if k != "lock"}
 
 
+class CacheMiss(RuntimeError):
+    """Raised in cache-only mode when a prompt has no recorded response."""
+
+
 class LLM:
     """Base class. Subclasses implement `_call`."""
 
@@ -53,6 +57,8 @@ class LLM:
         if self.cache_dir:
             self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.stats = LLMStats()
+        # Replay recorded responses only: a miss fails the run instead of calling the model.
+        self.cache_only = False
 
     def complete(self, system: str, user: str, schema: dict[str, Any],
                  oracle: Oracle | None = None, use_cache: bool = True) -> LLMResult:
@@ -68,6 +74,8 @@ class LLM:
             return LLMResult(rec["data"], rec["input_tokens"], rec["output_tokens"],
                              cached=True, refused=rec.get("refused", False),
                              elapsed_s=time.perf_counter() - started)
+        if self.cache_only:
+            raise CacheMiss(f"no recorded response for {key[:12]}")
 
         result = self._call(system, user, schema, oracle)
         with self.stats.lock:

@@ -6,7 +6,6 @@ from typing import Any
 from pathlib import Path
 import time
 
-from ..analysis.propagation import email_sigs
 from ..env.environment import Environment
 from ..faults.injector import FaultSpec
 from ..llm.base import LLM
@@ -15,7 +14,8 @@ from ..workflow.runner import RunResult, run_workflow
 
 
 def _state_ok(chk: dict[str, Any]) -> bool:
-    return not (chk["missing_payments"] or chk["extra_payments"] or chk["kv_wrong"] or chk["files_wrong"])
+    return not (chk["missing_payments"] or chk["extra_payments"] or chk.get("memo_wrong")
+                or chk["kv_wrong"] or chk["files_wrong"])
 
 
 def full_restart(task: Task, llm: LLM, faulty: RunResult, clean: RunResult,
@@ -30,7 +30,7 @@ def full_restart(task: Task, llm: LLM, faulty: RunResult, clean: RunResult,
     rerun = run_workflow(task, llm, None, env=env, tag="restart/", use_cache=use_cache)
     if trace_path is not None:
         rerun.dump(trace_path)
-    wrong = email_sigs(faulty.env) - email_sigs(clean.env)
+    wrong = faulty.check["emails_unexpected"] + faulty.check["emails_incorrect"]
     return {
         "restart_tokens": rerun.tokens,
         "restart_elapsed_s": time.perf_counter() - started,
@@ -39,8 +39,9 @@ def full_restart(task: Task, llm: LLM, faulty: RunResult, clean: RunResult,
         "restart_units": len(rerun.trace.nodes),
         "restart_refunds": len(faulty.env.net_payments()),
         "restart_state_ok": _state_ok(rerun.check),
-        "restart_unrecovered_emails": sum(wrong.values()),
-        "restart_duplicate_emails": len(faulty.env.outbox) - sum(wrong.values()),
+        "restart_unrecovered_emails": wrong,
+        "restart_duplicate_emails": len(faulty.env.outbox) - wrong,
+        "restart_unauthorized": rerun.check["unauthorized_action"],
         "restart_safety_violation": rerun.check["safety_violation"],
     }
 
@@ -63,6 +64,7 @@ def always_verify(task: Task, llm: LLM, fault: FaultSpec | None,
         "verify_calls": run.verify_calls,
         "verify_success": run.check["success"],
         "verify_state_ok": _state_ok(run.check),
+        "verify_unauthorized": run.check["unauthorized_action"],
         "verify_safety_violation": run.check["safety_violation"],
         "verify_base_tokens": run.tokens,
     }

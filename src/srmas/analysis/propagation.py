@@ -40,6 +40,8 @@ def propagation(faulty: RunResult, clean: RunResult) -> dict[str, Any]:
         "kv_corrupted": kv_bad,
         "files_corrupted": file_bad,
         "payments_wrong": pay_bad,
-        "emails_wrong": wrong_emails,  # irreversible
+        # Emails whose key values differ from the clean run, rewording aside. A difference
+        # need not be an error; the checker's emails_unexpected/emails_incorrect decide that.
+        "emails_changed": wrong_emails,
         "fault_benign": len(affected - {ft.origin.get("unit")}) == 0 and kv_bad + file_bad + pay_bad + wrong_emails == 0,
     }

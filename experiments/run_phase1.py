@@ -100,10 +100,16 @@ def run_task(task: Task, llm: LLM, fault_seeds: tuple[int, ...], raw_dir: Path,
         row |= propagation(faulty, clean)
 
         full_tokens = clean.tokens
+        origin = faulty.trace.origin["unit"]
+        row["origin_unit"] = origin
+        row["propagated"] = row["downstream_affected"] > 0
         for g in GRANULARITIES:
             pred = predict(faulty.trace, g)
             for k, v in score(pred, faulty.trace, clean.trace).items():
                 row[f"{g}_{k}"] = v
+            # Downstream only: the faulty unit itself is always predicted and always affected.
+            for k, v in score(pred, faulty.trace, clean.trace, skip=frozenset({origin})).items():
+                row[f"{g}_ds_{k}"] = v
             for k, v in bookkeeping(faulty.trace, g).items():
                 row[f"{g}_book_{k}"] = v
             recompute = sum(faulty.trace.nodes[u].tokens for u in pred)
@@ -138,6 +144,8 @@ def main() -> None:
     ap.add_argument("--live-baselines", action="store_true", help="uncached restart/verification measurements")
     ap.add_argument("--fault-types", default="", help="optional comma-separated pilot subset")
     ap.add_argument("--cache-dir", default="", help="use a fresh directory for independent experiments")
+    ap.add_argument("--cache-only", action="store_true",
+                    help="replay recorded responses only; a cache miss fails the task (no API calls)")
     ap.add_argument("--budget-usd", type=float, default=5.0)
     ap.add_argument("--input-rate", type=float, help="verified gateway USD per million input tokens")
     ap.add_argument("--output-rate", type=float, help="verified gateway USD per million output tokens")
@@ -168,6 +176,7 @@ def main() -> None:
     kwargs = ({"budget_usd": args.budget_usd, "input_rate": args.input_rate,
                "output_rate": args.output_rate} if args.llm == "triton" else {})
     llm = make_llm(args.llm, cache_dir=Path(args.cache_dir) if args.cache_dir else out / "response_cache", **kwargs)
+    llm.cache_only = args.cache_only
     t0 = time.time()
     rows, infos, failures = [], [], []
     with ThreadPoolExecutor(max_workers=args.workers) as pool:

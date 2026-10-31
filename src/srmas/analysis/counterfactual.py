@@ -94,16 +94,21 @@ def actual_affected(faulty: Trace, clean: Trace) -> set[str]:
     return {f or c for f, c in affected_pairs(faulty, clean)}
 
 
-def score(predicted: set[str], faulty: Trace, clean: Trace) -> dict[str, float]:
+def score(predicted: set[str], faulty: Trace, clean: Trace,
+          skip: frozenset[str] = frozenset()) -> dict[str, float]:
     """Precision/recall of a predicted invalidation set over aligned units.
 
     A unit that exists only in the clean replay (an action the faulty run dropped)
     is regenerated when the planner, or the faulty step at the same position, is
-    re-run, so it counts as predicted in that case.
+    re-run, so it counts as predicted in that case. Units in `skip` are left out;
+    skipping the faulty unit itself, which every policy predicts, scores only the
+    downstream units a policy has to find.
     """
     pred_n = tp = 0
     actual_n = 0
     for f, c in align(faulty, clean):
+        if (f or c) in skip:
+            continue
         if f is not None:
             p = f in predicted
         else:

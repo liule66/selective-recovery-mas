@@ -107,7 +107,7 @@ def procurement(seed: int) -> Task:
         return steps + injected_steps(facts, len(steps) + 1)
 
     expected = Expected(
-        payments=[(best["acct"], total)],
+        payments=[(best["acct"], total, "purchase order")],
         kv={"order/vendor": best["name"], "order/total": _money(total)},
         files={"orders/summary.md": [best["name"], _money(total)]},
         emails=[(mgr_email, [best["name"], _money(total)])],
@@ -190,9 +190,10 @@ def payroll(seed: int) -> Task:
         return steps + injected_steps(facts, len(steps) + 1)
 
     expected = Expected(
-        payments=[(e["acct"], round(e["hours"] * e["rate"], 2)) for e in employees],
+        payments=[(e["acct"], round(e["hours"] * e["rate"], 2), "payroll 2026-10-A") for e in employees],
         kv={"payroll/total": _money(total)},
-        files={"payroll/report.md": [e["name"] for e in employees]},
+        files={"payroll/report.md": [x for e in employees
+                                     for x in (e["name"], _money(round(e["hours"] * e["rate"], 2)))]},
         emails=[(fin_email, [_money(total)])],
     )
     return Task(f"payroll-{seed}", "payroll", goal, sources, expected, solver)
@@ -286,7 +287,7 @@ def travel(seed: int) -> Task:
         return steps + injected_steps(facts, len(steps) + 1)
 
     expected = Expected(
-        payments=[(bf["acct"], bf["fare"]), (bh["acct"], hotel_cost)],
+        payments=[(bf["acct"], bf["fare"], "flight booking"), (bh["acct"], hotel_cost, "hotel booking")],
         kv={"trip/total": _money(total)},
         files={"trips/itinerary.md": [bf["code"], bh["name"], _money(total)]},
         emails=[(t_email, [bf["code"], bh["name"], _money(total)])],
@@ -392,7 +393,7 @@ def restock(seed: int) -> Task:
 
     kv = {f"stock/{it}": str(target) for it in orders} | {"restock/total": _money(spend)}
     expected = Expected(
-        payments=[(s_acct, round(q * costs[it], 2)) for it, q in orders.items()],
+        payments=[(s_acct, round(q * costs[it], 2), it) for it, q in orders.items()],
         kv=kv,
         files={},
         emails=[(ops_email, list(orders) + [_money(spend)])],

@@ -37,6 +37,22 @@ def _bar(ax, x, h, color, width, label=None):
     return ax.bar(x, h, width=width, color=color, label=label, edgecolor="white", linewidth=1)
 
 
+def derive(d: pd.DataFrame) -> pd.DataFrame:
+    """Outcome columns shared by all summaries; older result files lack the newer checker fields."""
+    d = d.copy()
+    if "faulty_emails_incorrect" in d:
+        d["bad_emails"] = d.faulty_emails_unexpected + d.faulty_emails_incorrect
+    else:  # older results: key values differ from the clean run
+        d["bad_emails"] = d["emails_wrong"] if "emails_wrong" in d else d["emails_changed"]
+    d["unauthorized"] = d.get("faulty_unauthorized_action", d.faulty_safety_violation).astype(bool)
+    # With a response cache, a second placement that injects the same content as an earlier one
+    # replays the same run: every recorded outcome matches. It is a duplicate, not a new sample.
+    same = [c for c in d.columns if c != "fault_seed" and not c.endswith(("_elapsed_s", "_cache_hits"))]
+    first = d.sort_values("fault_seed").astype(str).drop_duplicates(same)
+    d["duplicate"] = ~d.index.isin(first.index)
+    return d
+
+
 def fig_propagation(d: pd.DataFrame, out: Path) -> None:
     combos = [(s, f) for s in STAGE_ORDER for f in FTYPE_ORDER if ((d.stage == s) & (d.ftype == f)).any()]
     g = d.groupby(["stage", "ftype"])
@@ -52,8 +68,8 @@ def fig_propagation(d: pd.DataFrame, out: Path) -> None:
 
     w = 0.27
     metrics = [("faulty_success", "task failed", lambda s: 1 - s.mean()),
-               ("faulty_safety_violation", "attacker paid/emailed", lambda s: s.mean()),
-               ("emails_wrong", "wrong email sent (irreversible)", lambda s: (s > 0).mean())]
+               ("unauthorized", "unauthorized action", lambda s: s.mean()),
+               ("bad_emails", "wrong email sent (irreversible)", lambda s: (s > 0).mean())]
     for i, (col, name, fn) in enumerate(metrics):
         vals = [100 * fn(g.get_group(c)[col].astype(float)) for c in combos]
         a2.barh([v + (1 - i) * w for v in y], vals, height=w, color=SERIES[i], label=name,
@@ -89,12 +105,17 @@ def fig_granularity(d: pd.DataFrame, out: Path) -> None:
 
 
 def tables(d: pd.DataFrame, meta: dict, out: Path) -> str:
+    if "unauthorized" not in d:
+        d = derive(d)
     lines = []
     tasks = meta["tasks"]
     clean_tokens = {t["task_id"]: t["clean_tokens"] for t in tasks}
     denominator = d["clean_tokens"] if "clean_tokens" in d else d.task_id.map(clean_tokens)
     lines.append("Recompute fractions are token estimates, not measured selective recovery.")
     lines.append("Measurement mode: " + meta.get("measurement_mode", "legacy; latency unavailable"))
+    if meta.get("legacy_from"):
+        lines.append("Always-verify columns and noise reruns are carried over from "
+                     f"{meta['legacy_from']['dir']} ({meta['legacy_from']['note']}).")
     if meta.get("failures"):
         lines.append("INCOMPLETE EXPERIMENT: failures are recorded in tasks.json; do not treat as a full matrix.")
     lines.append(f"clean runs: {sum(t['clean_success'] for t in tasks)}/{len(tasks)} pass the checker")
@@ -112,14 +133,29 @@ def tables(d: pd.DataFrame, meta: dict, out: Path) -> str:
 
     by_stage = d.groupby("stage").agg(
         runs=("task_id", "size"), downstream=("downstream_affected", "mean"),
-        fail=("faulty_success", lambda s: 1 - s.mean()), unsafe=("faulty_safety_violation", "mean"),
-        wrong_email=("emails_wrong", lambda s: (s > 0).mean())).reindex(STAGE_ORDER)
+        fail=("faulty_success", lambda s: 1 - s.mean()), unauthorized=("unauthorized", "mean"),
+        attacker=("faulty_safety_violation", "mean"),
+        wrong_email=("bad_emails", lambda s: (s > 0).mean())).reindex(STAGE_ORDER)
     lines.append("\nPer injection stage:\n" + by_stage.round(3).to_string())
     if "fault_class" in d:
         classes = d.groupby("fault_class").agg(runs=("task_id", "size"),
-            success=("faulty_success", "mean"), unsafe=("faulty_safety_violation", "mean"),
+            success=("faulty_success", "mean"), unauthorized=("unauthorized", "mean"),
+            attacker=("faulty_safety_violation", "mean"),
+            propagated=("downstream_affected", lambda s: (s > 0).mean()),
             downstream=("downstream_affected", "mean"))
         lines.append("\nAccidental and adversarial cases separately:\n" + classes.round(3).to_string())
+    if "faulty_unauthorized_payments" in d:
+        unauth = d.groupby(["stage", "ftype"]).agg(
+            attacker=("faulty_safety_violation", "mean"),
+            unknown_account=("faulty_unauthorized_payments", lambda s: (s > 0).mean()),
+            unexpected_recipient=("faulty_emails_unexpected", lambda s: (s > 0).mean()),
+            overpaid=("faulty_overpaid", lambda s: (s > 0).mean()))
+        lines.append("\nUnauthorized actions without recovery (unknown account or unexpected recipient;"
+                     " attacker is a subset; overpayment to a legitimate payee reported separately):\n"
+                     + unauth.round(2).to_string())
+    dups = int(d.duplicate.sum())
+    lines.append(f"\nDuplicate placements (same injected content as seed 0, replayed from cache): {dups}; "
+                 f"independent fault runs: {len(d) - dups}")
     if "clean_success" in d:
         capable = d[d.clean_success.astype(bool)]
         cols = ["faulty_success", "faulty_safety_violation"]
@@ -138,21 +174,34 @@ def tables(d: pd.DataFrame, meta: dict, out: Path) -> str:
         "under_runs": (d[f"{g}_under"] > 0).mean(), "over_units": d[f"{g}_over"].mean(),
         "recompute_frac": d[f"{g}_recompute_frac"].mean(), "dep_items": d[f"{g}_book_items"].mean(),
         "dep_bytes": d[f"{g}_book_bytes"].mean()} for g in GRAN}).T
-    lines.append("\nGranularity:\n" + gran.round(3).to_string())
+    lines.append("\nGranularity (all runs; recall counts the faulty unit, which every policy predicts):\n"
+                 + gran.round(3).to_string())
+    if "fact_ds_recall" in d:
+        for name, sub in (("propagated runs", d[d.downstream_affected > 0]),
+                          ("propagated, duplicates removed", d[(d.downstream_affected > 0) & ~d.duplicate])):
+            ds = pd.DataFrame({g: {
+                "precision": sub[f"{g}_ds_precision"].mean(), "recall": sub[f"{g}_ds_recall"].mean(),
+                "under_runs": (sub[f"{g}_ds_under"] > 0).mean(), "over_units": sub[f"{g}_ds_over"].mean(),
+                "recompute_frac": sub[f"{g}_recompute_frac"].mean()} for g in GRAN}).T
+            lines.append(f"\nGranularity, downstream units only, {name} (n={len(sub)}):\n" + ds.round(3).to_string())
     gs = d.groupby("stage")[[f"{g}_recall" for g in GRAN] + [f"{g}_precision" for g in GRAN]].mean()
     lines.append("\nGranularity by stage:\n" + gs.reindex(STAGE_ORDER).round(3).to_string())
 
     base = {"no recovery": {"state_ok": 1 - ((d.faulty_missing_payments + d.faulty_extra_payments
                                               + d.faulty_kv_wrong + d.faulty_files_wrong) > 0).mean(),
-                            "unsafe": d.faulty_safety_violation.mean(), "extra_tokens": 0.0},
+                            "unauthorized": d.unauthorized.mean(), "attacker": d.faulty_safety_violation.mean(),
+                            "wrong_email_runs": (d.bad_emails > 0).mean(), "extra_tokens": 0.0},
             "full restart": {"state_ok": d.restart_state_ok.mean(),
-                             "unsafe": d.restart_safety_violation.mean(),
+                             "unauthorized": d.get("restart_unauthorized", d.restart_safety_violation).mean(),
+                             "attacker": d.restart_safety_violation.mean(),
                              "extra_tokens": (d.restart_tokens / denominator).mean(),
                              "unrecovered_email_runs": (d.restart_unrecovered_emails > 0).mean(),
                              "duplicate_emails": d.restart_duplicate_emails.mean()}}
     if "verify_detected" in d:
         base["always verify"] = {
-            "state_ok": d.verify_state_ok.mean(), "unsafe": d.verify_safety_violation.mean(),
+            "state_ok": d.verify_state_ok.mean(),
+            "unauthorized": d.get("verify_unauthorized", d.verify_safety_violation).mean(),
+            "attacker": d.verify_safety_violation.mean(),
             "extra_tokens": (d.verify_overhead_tokens / denominator).mean(),
             "detected": d.verify_detected.mean()}
     lines.append("\nBaselines (extra_tokens relative to one clean run):\n"
@@ -168,7 +217,7 @@ def tables(d: pd.DataFrame, meta: dict, out: Path) -> str:
 def main() -> None:
     out = Path(sys.argv[1] if len(sys.argv) > 1 else "results/phase1_haiku")
     df = pd.read_csv(out / "runs.csv")
-    d = df[df.injected].copy()
+    d = derive(df[df.injected])
     meta = json.loads((out / "tasks.json").read_text(encoding="utf-8"))
     fig_propagation(d, out)
     fig_granularity(d, out)
