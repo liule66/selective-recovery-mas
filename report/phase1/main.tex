@@ -86,8 +86,8 @@ flags an \emph{unauthorized action} for a payment to an account named in no sour
 to a recipient the task does not name; payments and emails to the attacker are a subset.
 All agents run on Claude Haiku~5.5 with schema-constrained JSON output.
 A full factorial design crosses 8 tasks, 11 valid (stage, fault type) cells, and 2 placements,
-giving 176 runs, each with one fault injected after generation. In 22 cells both placements
-inject identical content and replay the same run, leaving 154 independent runs. Task seeds 0--1
+giving 176 runs, each with one fault injected after generation. For 22 of the 88 task--cell pairs both
+placements inject identical content and replay the same run, leaving 154 independent runs. Task seeds 0--1
 are for development; seeds 2--3 are held out for Phase~2 evaluation.
 
 \para{Tracking policies.} \emph{Stage}: invalidate $v_0$'s stage and all later ones.
@@ -102,9 +102,9 @@ units are aligned by content before plan position. As a noise control, 16 uncach
 differ from the cached run in 0.38 units on average.
 
 \para{Baselines.} \emph{Full restart} restores files/KV, refunds payments, and re-executes.
-\emph{Always-verify} audits each output with Haiku; the original run restored the
-pre-injection output when flagged and estimated retry tokens. The revised harness retries
-for real (Appendix~B).
+\emph{Always-verify} audits each output with Haiku; as in the original run, a flagged output
+is restored to its pre-injection value and retry tokens are estimated, which lets us replay it
+from the cache. The revised harness retries for real (Appendix~B).
 
 \begin{table}[t]
 \centering\small
@@ -143,7 +143,7 @@ Fact-level (est.) & --    & --   & --   & 0.34$\times$ \\
 \end{tabular}
 \vspace{-0.5em}
 \caption{Baselines over 176 fault runs. State excludes email. Costs are tokens relative to a
-clean run; the verifier's retry cost was estimated.}
+clean run; the verifier's retry cost is estimated. All rows use the current checker.}
 \label{tab:base}
 \vspace{-1.2em}
 \end{table}
@@ -193,10 +193,10 @@ fact-level cost is estimated from logged tokens. Changed prompts can still
 resample, so counterfactual comparison is approximate. Fine-grained oracle locations favor
 the fact policy. A plan-level fabricated step kept the copied step's instruction, so executors
 paid the real payee twice instead of the fabricated account. \emph{External validity}: synthetic
-tasks, two task seeds. Current metrics come from replaying the committed Claude cache without
-API calls; always-verify numbers are from the original run. \emph{Phase~2} builds recovery
-and compares it with full restart, suffix
-replay and always-verify under identical fault schedules and budgets.
+tasks, two task seeds. All metrics are replayed from the committed Claude cache without API
+calls. \emph{Deviation}: hosted models replace the proposed local CPU models (Haiku, about
+\$0.30; a campus model in Appendix~B). \emph{Phase~2} builds recovery and compares it with
+these baselines and suffix replay on identical faults.
 
 {\footnotesize
 \begin{thebibliography}{9}

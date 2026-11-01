@@ -10,8 +10,8 @@ the task correct and safe?
 ## Setup
 
 ```bash
-conda create -p D:/miniconda3/envs/srmas python=3.12
-D:/miniconda3/envs/srmas/python.exe -m pip install --no-cache-dir -e .[dev]
+python3.12 -m venv .venv && source .venv/bin/activate   # or a conda env with Python 3.12
+python -m pip install --no-cache-dir -e ".[dev]"
 ```
 
 Put the Anthropic API key in `ANTHROPIC_API_KEY` or in `api.txt` at the repo root (gitignored).
@@ -47,14 +47,19 @@ committed response cache. The replay made no API calls and reproduced every orig
 - Unauthorized actions follow 58% of adversarial and 5% of accidental faults. 22 placements
   duplicate another (identical injection), leaving 154 independent runs.
 - Task seeds 0–1 are the development set; seeds 2–3 are held out for Phase 2 evaluation.
-- Always-verify columns and noise reruns are carried over from the original run.
+- Always-verify is replayed from the cache with its original repair (restore the pre-injection
+  output, estimate retry tokens) and re-scored with the current checker: it reproduces the original
+  detection and token columns on all 176 runs and leaves no unauthorized action or wrong email.
+  Only the 16 uncached noise reruns are carried over from the original run.
 
-Traces and the response cache are in `results/phase1_haiku_revised/`. To reproduce without API spending:
+Traces and the response cache are in `results/phase1_haiku_revised/`. To reproduce without API
+spending or an API key (write the output outside the repository so `tasks.json` records a clean
+source revision):
 
 ```bash
-D:/miniconda3/envs/srmas/python.exe experiments/run_phase1.py --llm haiku --cache-only --cache-dir results/phase1_haiku_revised/response_cache --skip-verify --noise-runs 0 --out results/my_replay
-D:/miniconda3/envs/srmas/python.exe experiments/merge_legacy_verify.py results/phase1_haiku results/my_replay
-D:/miniconda3/envs/srmas/python.exe experiments/make_figures.py results/my_replay
+python experiments/run_phase1.py --llm haiku --cache-only --cache-dir results/phase1_haiku_revised/response_cache --verify-repair restore --noise-runs 0 --out /tmp/srmas_replay
+python experiments/merge_legacy_verify.py results/phase1_haiku /tmp/srmas_replay
+python experiments/make_figures.py /tmp/srmas_replay
 ```
 
 ## Original Phase 1 results (Claude Haiku 5.5, 8 tasks × 22 faults)
@@ -74,18 +79,20 @@ API client. See [the reproducibility guide](docs/PHASE1_REPRODUCIBILITY.md).
 - Campus model: `api-glm-5.3-flash`; credentials stayed in DataHub.
 - A [six-case live pilot](results/phase1_triton_pilot/summary.txt) measured actual restart/verification calls.
 - [44 serial propagation cases](results/phase1_triton_validation_serial/summary.txt) covered all four templates and 11 stage/fault combinations. Clean baseline success was 3/4, with 7/8 successful uncached repeats. On the 33 clean-capable fault cases, final success was 11/33 without recovery, 29/33 after restart, and 31/33 with actual verification retries. Cached replay times are not live latency measurements.
+- On this route an uncached clean repeat differs from the cached clean run in 3.0 units on average (Claude: 0.38), about as many as a researcher fault changes downstream (2.75). Its propagation and granularity figures cannot separate fault effects from resampling without repeated samples per case.
 - The earlier four-worker batch failed on requests before completing a fault case; its failure manifest is preserved in `results/phase1_triton_validation/tasks.json`.
 - 1,093 real requests cost an estimated $0.1761 in completed token usage plus $0.0141 reserved for uncertain failures, below the $5 cap. This is not an authoritative billing statement.
-- 36 offline tests pass. Updated report: [Phase 1 PDF](report/phase1/main.pdf), with measured validation and limitations in Appendix B.
+- The offline tests pass (`python -m pytest -q`). Updated report: [Phase 1 PDF](report/phase1/main.pdf), with measured validation and limitations in Appendix B.
 
-The separately supplied submission ZIP contains synthetic traces, response caches,
-cost records, and the exact experiment source overlays. Keep it with the repository
-and PDF for submission; these large evidence directories are intentionally ignored by Git.
+The Claude Phase 1 traces and response cache are versioned in `results/phase1_haiku_revised/`.
+The campus-pilot traces, response caches, cost records and experiment source overlays are
+ignored by Git and travel in the separately supplied submission ZIP; keep it with the
+repository and PDF for submission.
 
 ## Running
 
 ```bash
-D:/miniconda3/envs/srmas/python.exe -m pytest
-D:/miniconda3/envs/srmas/python.exe experiments/run_phase1.py --llm mock
-D:/miniconda3/envs/srmas/python.exe experiments/run_phase1.py --llm haiku
+python -m pytest -q
+python experiments/run_phase1.py --llm mock --out /tmp/srmas_mock
+python experiments/run_phase1.py --llm haiku --out /tmp/srmas_haiku   # live API calls
 ```

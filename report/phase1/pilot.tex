@@ -41,8 +41,10 @@ reported separately in the generated summaries.
 live pilot as serving-performance measurements. A preceding four-worker batch
 failed on four requests before completing any fault case; its manifest and
 partial traces are retained, and it is excluded from success-rate denominators.
-Changed prompts still resample; two clean repeats do not establish reliable
-variance estimates. No result here measures implemented selective recovery.
+Changed prompts still resample, and on this route the uncached clean repeats differed
+from the cached clean run in 3.0 units on average (Claude: 0.38), about as many as a
+researcher fault changes downstream (2.75). Its propagation figures therefore need
+repeated samples per case. No result here measures implemented selective recovery.
 
 \para{Resource accounting.} There were 1,093 real requests across probes, pilot,
 the failed batch and serial validation. At the campus-listed rates of \$0.15/\$0.50

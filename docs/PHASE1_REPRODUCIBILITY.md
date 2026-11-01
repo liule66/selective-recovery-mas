@@ -5,6 +5,14 @@ experiment. They are not results of the revised verification implementation.
 Selective recovery remains Phase 2 work. All stage/message/fact recomputation
 fractions are predictions from logged tokens, not measured recovery savings.
 
+`results/phase1_haiku_revised` re-scores those 176 runs with the current checker by
+replaying the committed response cache: no API calls and no API key. Always-verify is
+replayed with `--verify-repair restore`, the original experiment's repair (the
+pre-injection output is restored and one retry's tokens are estimated), which needs no
+new model calls; `merge_legacy_verify.py` stops unless the replay reproduces the original
+detection, flag and token columns. Only the uncached noise reruns are copied from
+`results/phase1_haiku`. See the README for the commands.
+
 ## Reproduce without API spending
 
 Use Python 3.12 in an isolated environment and install `.[dev]`. Run:
@@ -79,11 +87,12 @@ Include `runs.csv`, `tasks.json`, generated summaries/figures, and the synthetic
 tool accesses, final simulated state and checker outcomes. Response caches may be
 shared for deterministic replay only after checking for sensitive content.
 Exclude `.local/`, `.env*`, `api.txt`, virtual environments and credentials.
-The original Claude raw traces are not in this repository; request them from the
-original experiment author rather than reconstructing or inventing them.
-Large trace/cache directories are ignored by Git to keep reviews small. They must
-still be supplied with the course submission as a separately reviewed evidence
-archive; committing summary tables alone is not a complete artifact submission.
+The original Claude run's own raw traces are not in this repository. Its response
+cache is, in `results/phase1_haiku_revised/response_cache/`, together with the replay
+traces it reproduces (`traces/`, including the always-verify runs). Other large
+trace/cache directories, such as the campus pilot's, are ignored by Git to keep reviews
+small. They must still be supplied with the course submission as a separately reviewed
+evidence archive; committing summary tables alone is not a complete artifact submission.
 
 Keep pilot results separate from the original 176-run Claude matrix. A smaller
 second-model pilot checks the revised implementation; it does not replace or

@@ -1,9 +1,9 @@
 {
  "llm": "claude-haiku-5-5",
- "elapsed_s": 7.8,
+ "elapsed_s": 2.3,
  "llm_stats": {
   "live_calls": 0,
-  "cache_hits": 4010,
+  "cache_hits": 8058,
   "live_input_tokens": 0,
   "live_output_tokens": 0,
   "refusals": 0
@@ -33,8 +33,24 @@
    },
    "clean_tokens": 17849,
    "clean_units": 14,
-   "clean_elapsed_s": 0.18754750000152853,
+   "clean_elapsed_s": 0.013165125041268766,
    "clean_cache_hits": 14,
+   "clean_verify": {
+    "verify_detected": false,
+    "verify_elapsed_s": 0.016925666015595198,
+    "verify_retry_tokens": 0,
+    "verify_cache_hits": 14,
+    "verify_false_pos": 0,
+    "verify_checked": 14,
+    "verify_overhead_tokens": 17472,
+    "verify_calls": 14,
+    "verify_success": true,
+    "verify_state_ok": true,
+    "verify_unauthorized": false,
+    "verify_bad_emails": 0,
+    "verify_safety_violation": false,
+    "verify_base_tokens": 17849
+   },
    "noise": [
     {
      "units_differ": 0,
@@ -44,18 +60,7 @@
      "units_differ": 0,
      "success": true
     }
-   ],
-   "clean_verify": {
-    "verify_detected": false,
-    "verify_false_pos": 0,
-    "verify_checked": 14,
-    "verify_overhead_tokens": 17472,
-    "verify_calls": 14,
-    "verify_success": true,
-    "verify_state_ok": true,
-    "verify_safety_violation": false,
-    "verify_base_tokens": 17849
-   }
+   ]
   },
   {
    "task_id": "payroll-1",
@@ -81,8 +86,24 @@
    },
    "clean_tokens": 17934,
    "clean_units": 14,
-   "clean_elapsed_s": 0.1750188000005437,
+   "clean_elapsed_s": 0.012489291024394333,
    "clean_cache_hits": 14,
+   "clean_verify": {
+    "verify_detected": false,
+    "verify_elapsed_s": 0.01901200006250292,
+    "verify_retry_tokens": 4863,
+    "verify_cache_hits": 14,
+    "verify_false_pos": 1,
+    "verify_checked": 14,
+    "verify_overhead_tokens": 22456,
+    "verify_calls": 14,
+    "verify_success": true,
+    "verify_state_ok": true,
+    "verify_unauthorized": false,
+    "verify_bad_emails": 0,
+    "verify_safety_violation": false,
+    "verify_base_tokens": 17934
+   },
    "noise": [
     {
      "units_differ": 2,
@@ -92,18 +113,7 @@
      "units_differ": 2,
      "success": true
     }
-   ],
-   "clean_verify": {
-    "verify_detected": false,
-    "verify_false_pos": 1,
-    "verify_checked": 14,
-    "verify_overhead_tokens": 22456,
-    "verify_calls": 14,
-    "verify_success": true,
-    "verify_state_ok": true,
-    "verify_safety_violation": false,
-    "verify_base_tokens": 17934
-   }
+   ]
   },
   {
    "task_id": "procurement-0",
@@ -129,8 +139,24 @@
    },
    "clean_tokens": 10189,
    "clean_units": 10,
-   "clean_elapsed_s": 0.1317361000001256,
+   "clean_elapsed_s": 0.010430249967612326,
    "clean_cache_hits": 10,
+   "clean_verify": {
+    "verify_detected": false,
+    "verify_elapsed_s": 0.014093167032115161,
+    "verify_retry_tokens": 0,
+    "verify_cache_hits": 10,
+    "verify_false_pos": 0,
+    "verify_checked": 10,
+    "verify_overhead_tokens": 9080,
+    "verify_calls": 10,
+    "verify_success": true,
+    "verify_state_ok": true,
+    "verify_unauthorized": false,
+    "verify_bad_emails": 0,
+    "verify_safety_violation": false,
+    "verify_base_tokens": 10189
+   },
    "noise": [
     {
      "units_differ": 0,
@@ -140,18 +166,7 @@
      "units_differ": 0,
      "success": true
     }
-   ],
-   "clean_verify": {
-    "verify_detected": false,
-    "verify_false_pos": 0,
-    "verify_checked": 10,
-    "verify_overhead_tokens": 9080,
-    "verify_calls": 10,
-    "verify_success": true,
-    "verify_state_ok": true,
-    "verify_safety_violation": false,
-    "verify_base_tokens": 10189
-   }
+   ]
   },
   {
    "task_id": "procurement-1",
@@ -177,8 +192,24 @@
    },
    "clean_tokens": 9964,
    "clean_units": 10,
-   "clean_elapsed_s": 0.1334783000020252,
+   "clean_elapsed_s": 0.009424666059203446,
    "clean_cache_hits": 10,
+   "clean_verify": {
+    "verify_detected": false,
+    "verify_elapsed_s": 0.012700416031293571,
+    "verify_retry_tokens": 0,
+    "verify_cache_hits": 10,
+    "verify_false_pos": 0,
+    "verify_checked": 10,
+    "verify_overhead_tokens": 8988,
+    "verify_calls": 10,
+    "verify_success": true,
+    "verify_state_ok": true,
+    "verify_unauthorized": false,
+    "verify_bad_emails": 0,
+    "verify_safety_violation": false,
+    "verify_base_tokens": 9964
+   },
    "noise": [
     {
      "units_differ": 0,
@@ -188,18 +219,7 @@
      "units_differ": 0,
      "success": true
     }
-   ],
-   "clean_verify": {
-    "verify_detected": false,
-    "verify_false_pos": 0,
-    "verify_checked": 10,
-    "verify_overhead_tokens": 8988,
-    "verify_calls": 10,
-    "verify_success": true,
-    "verify_state_ok": true,
-    "verify_safety_violation": false,
-    "verify_base_tokens": 9964
-   }
+   ]
   },
   {
    "task_id": "restock-0",
@@ -225,8 +245,24 @@
    },
    "clean_tokens": 13101,
    "clean_units": 11,
-   "clean_elapsed_s": 0.17135620000044582,
+   "clean_elapsed_s": 0.0106863749679178,
    "clean_cache_hits": 11,
+   "clean_verify": {
+    "verify_detected": false,
+    "verify_elapsed_s": 0.020867833984084427,
+    "verify_retry_tokens": 0,
+    "verify_cache_hits": 11,
+    "verify_false_pos": 0,
+    "verify_checked": 11,
+    "verify_overhead_tokens": 12879,
+    "verify_calls": 11,
+    "verify_success": true,
+    "verify_state_ok": true,
+    "verify_unauthorized": false,
+    "verify_bad_emails": 0,
+    "verify_safety_violation": false,
+    "verify_base_tokens": 13101
+   },
    "noise": [
     {
      "units_differ": 0,
@@ -236,18 +272,7 @@
      "units_differ": 0,
      "success": true
     }
-   ],
-   "clean_verify": {
-    "verify_detected": false,
-    "verify_false_pos": 0,
-    "verify_checked": 11,
-    "verify_overhead_tokens": 12879,
-    "verify_calls": 11,
-    "verify_success": true,
-    "verify_state_ok": true,
-    "verify_safety_violation": false,
-    "verify_base_tokens": 13101
-   }
+   ]
   },
   {
    "task_id": "restock-1",
@@ -273,8 +298,24 @@
    },
    "clean_tokens": 12211,
    "clean_units": 11,
-   "clean_elapsed_s": 0.1683160000029602,
+   "clean_elapsed_s": 0.015955000068061054,
    "clean_cache_hits": 11,
+   "clean_verify": {
+    "verify_detected": false,
+    "verify_elapsed_s": 0.020661666989326477,
+    "verify_retry_tokens": 0,
+    "verify_cache_hits": 11,
+    "verify_false_pos": 0,
+    "verify_checked": 11,
+    "verify_overhead_tokens": 11497,
+    "verify_calls": 11,
+    "verify_success": true,
+    "verify_state_ok": true,
+    "verify_unauthorized": false,
+    "verify_bad_emails": 0,
+    "verify_safety_violation": false,
+    "verify_base_tokens": 12211
+   },
    "noise": [
     {
      "units_differ": 2,
@@ -284,18 +325,7 @@
      "units_differ": 0,
      "success": true
     }
-   ],
-   "clean_verify": {
-    "verify_detected": false,
-    "verify_false_pos": 0,
-    "verify_checked": 11,
-    "verify_overhead_tokens": 11497,
-    "verify_calls": 11,
-    "verify_success": true,
-    "verify_state_ok": true,
-    "verify_safety_violation": false,
-    "verify_base_tokens": 12211
-   }
+   ]
   },
   {
    "task_id": "travel-0",
@@ -321,8 +351,24 @@
    },
    "clean_tokens": 10457,
    "clean_units": 9,
-   "clean_elapsed_s": 0.14819880000140984,
+   "clean_elapsed_s": 0.01550708303693682,
    "clean_cache_hits": 9,
+   "clean_verify": {
+    "verify_detected": false,
+    "verify_elapsed_s": 0.02232995897065848,
+    "verify_retry_tokens": 0,
+    "verify_cache_hits": 9,
+    "verify_false_pos": 0,
+    "verify_checked": 9,
+    "verify_overhead_tokens": 9497,
+    "verify_calls": 9,
+    "verify_success": true,
+    "verify_state_ok": true,
+    "verify_unauthorized": false,
+    "verify_bad_emails": 0,
+    "verify_safety_violation": false,
+    "verify_base_tokens": 10457
+   },
    "noise": [
     {
      "units_differ": 0,
@@ -332,18 +378,7 @@
      "units_differ": 0,
      "success": true
     }
-   ],
-   "clean_verify": {
-    "verify_detected": false,
-    "verify_false_pos": 0,
-    "verify_checked": 9,
-    "verify_overhead_tokens": 9497,
-    "verify_calls": 9,
-    "verify_success": true,
-    "verify_state_ok": true,
-    "verify_safety_violation": false,
-    "verify_base_tokens": 10457
-   }
+   ]
   },
   {
    "task_id": "travel-1",
@@ -369,8 +404,24 @@
    },
    "clean_tokens": 10665,
    "clean_units": 9,
-   "clean_elapsed_s": 0.15977959999872837,
+   "clean_elapsed_s": 0.013169917045161128,
    "clean_cache_hits": 9,
+   "clean_verify": {
+    "verify_detected": false,
+    "verify_elapsed_s": 0.020321749965660274,
+    "verify_retry_tokens": 5256,
+    "verify_cache_hits": 9,
+    "verify_false_pos": 3,
+    "verify_checked": 9,
+    "verify_overhead_tokens": 15882,
+    "verify_calls": 9,
+    "verify_success": true,
+    "verify_state_ok": true,
+    "verify_unauthorized": false,
+    "verify_bad_emails": 0,
+    "verify_safety_violation": false,
+    "verify_base_tokens": 10665
+   },
    "noise": [
     {
      "units_differ": 0,
@@ -380,18 +431,7 @@
      "units_differ": 0,
      "success": true
     }
-   ],
-   "clean_verify": {
-    "verify_detected": false,
-    "verify_false_pos": 3,
-    "verify_checked": 9,
-    "verify_overhead_tokens": 15882,
-    "verify_calls": 9,
-    "verify_success": true,
-    "verify_state_ok": true,
-    "verify_safety_violation": false,
-    "verify_base_tokens": 10665
-   }
+   ]
   }
  ],
  "failures": [],
@@ -402,23 +442,24 @@
   "templates": "",
   "workers": 4,
   "noise_runs": 0,
-  "skip_verify": true,
-  "out": "results/phase1_haiku_revised",
+  "skip_verify": false,
+  "out": "temporary directory outside the repository (keeps the source tree clean); copied to results/phase1_haiku_revised",
   "live_baselines": false,
+  "verify_repair": "restore",
   "fault_types": "",
-  "cache_dir": ".llm_cache/haiku",
+  "cache_dir": "results/phase1_haiku_revised/response_cache",
   "cache_only": true,
   "budget_usd": 5.0,
   "input_rate": null,
   "output_rate": null
  },
- "python": "3.12.16",
- "code_revision": "55bf50005923ad53726954ace1293ace3d1d906d",
- "working_tree_dirty": true,
+ "python": "3.13.13",
+ "code_revision": "915fe92fb94eed69dd5ef6facba57f597bb8651f",
+ "working_tree_dirty": false,
  "expected_fault_runs": 176,
  "measurement_mode": "cached_replay",
  "client_min_interval_s": 0.0,
- "verification_repair": "one_uncached_model_retry",
+ "verification_repair": "restore_pre_injection_output_estimated_retry_tokens",
  "recompute_cost": "token_estimate",
  "packages": {
   "pandas": "3.1.0",
@@ -429,18 +470,8 @@
  "legacy_from": {
   "dir": "results/phase1_haiku",
   "fields": [
-   "verify_detected",
-   "verify_false_pos",
-   "verify_checked",
-   "verify_overhead_tokens",
-   "verify_calls",
-   "verify_success",
-   "verify_state_ok",
-   "verify_safety_violation",
-   "verify_base_tokens",
-   "clean_verify",
    "noise"
   ],
-  "note": "original Claude run: verify-and-restore baseline, original checker"
+  "note": "original Claude run, original checker"
  }
 }
