@@ -113,9 +113,12 @@ def tables(d: pd.DataFrame, meta: dict, out: Path) -> str:
     denominator = d["clean_tokens"] if "clean_tokens" in d else d.task_id.map(clean_tokens)
     lines.append("Recompute fractions are token estimates, not measured selective recovery.")
     lines.append("Measurement mode: " + meta.get("measurement_mode", "legacy; latency unavailable"))
-    if meta.get("legacy_from"):
-        lines.append("Always-verify columns and noise reruns are carried over from "
-                     f"{meta['legacy_from']['dir']} ({meta['legacy_from']['note']}).")
+    if meta.get("verification_repair"):
+        lines.append("Always-verify repair: " + meta["verification_repair"])
+    legacy = meta.get("legacy_from")
+    if legacy and legacy.get("fields"):
+        lines.append(f"Carried over from {legacy['dir']} without re-scoring ({legacy['note']}): "
+                     + ", ".join(legacy["fields"]))
     if meta.get("failures"):
         lines.append("INCOMPLETE EXPERIMENT: failures are recorded in tasks.json; do not treat as a full matrix.")
     lines.append(f"clean runs: {sum(t['clean_success'] for t in tasks)}/{len(tasks)} pass the checker")
@@ -204,6 +207,8 @@ def tables(d: pd.DataFrame, meta: dict, out: Path) -> str:
             "attacker": d.verify_safety_violation.mean(),
             "extra_tokens": (d.verify_overhead_tokens / denominator).mean(),
             "detected": d.verify_detected.mean()}
+        if "verify_bad_emails" in d:
+            base["always verify"]["wrong_email_runs"] = (d.verify_bad_emails > 0).mean()
     lines.append("\nBaselines (extra_tokens relative to one clean run):\n"
                  + pd.DataFrame(base).T.round(3).to_string())
     if "verify_detected" in d:

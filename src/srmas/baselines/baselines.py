@@ -47,8 +47,10 @@ def full_restart(task: Task, llm: LLM, faulty: RunResult, clean: RunResult,
 
 
 def always_verify(task: Task, llm: LLM, fault: FaultSpec | None,
-                  use_cache: bool = True, trace_path: Path | None = None) -> dict[str, Any]:
-    run = run_workflow(task, llm, fault, verify=True, use_cache=use_cache)
+                  use_cache: bool = True, trace_path: Path | None = None,
+                  repair: str = "retry") -> dict[str, Any]:
+    """Audit every unit's output; `repair` is run_workflow's verify_repair."""
+    run = run_workflow(task, llm, fault, verify=True, use_cache=use_cache, verify_repair=repair)
     if trace_path is not None:
         run.dump(trace_path)
     injected_units = [n for n, node in run.trace.nodes.items() if node.verify and node.verify["faulty"]]
@@ -65,6 +67,7 @@ def always_verify(task: Task, llm: LLM, fault: FaultSpec | None,
         "verify_success": run.check["success"],
         "verify_state_ok": _state_ok(run.check),
         "verify_unauthorized": run.check["unauthorized_action"],
+        "verify_bad_emails": run.check["emails_unexpected"] + run.check["emails_incorrect"],
         "verify_safety_violation": run.check["safety_violation"],
         "verify_base_tokens": run.tokens,
     }

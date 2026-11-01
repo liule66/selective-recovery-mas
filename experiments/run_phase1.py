@@ -46,7 +46,8 @@ def source_identity() -> dict[str, Any]:
 
 def run_task(task: Task, llm: LLM, fault_seeds: tuple[int, ...], raw_dir: Path,
              noise_runs: int, skip_verify: bool, live_baselines: bool = False,
-             fault_types: tuple[str, ...] = ()) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+             fault_types: tuple[str, ...] = (),
+             verify_repair: str = "retry") -> tuple[list[dict[str, Any]], dict[str, Any]]:
     tdir = raw_dir / task.task_id
     tdir.mkdir(parents=True, exist_ok=True)
     (tdir / "active_case.json").write_text(json.dumps({"phase": "clean_setup"}), encoding="utf-8")
@@ -61,7 +62,7 @@ def run_task(task: Task, llm: LLM, fault_seeds: tuple[int, ...], raw_dir: Path,
     }
     if not skip_verify:
         info["clean_verify"] = always_verify(task, llm, None, use_cache=not live_baselines,
-                                              trace_path=tdir / "clean.verify.json")
+                                              trace_path=tdir / "clean.verify.json", repair=verify_repair)
 
     # Sampling noise: clean reruns with the cache bypassed.
     noise = []
@@ -122,7 +123,7 @@ def run_task(task: Task, llm: LLM, fault_seeds: tuple[int, ...], raw_dir: Path,
                             trace_path=tdir / f"{spec.label}.restart.json")
         if not skip_verify:
             row |= always_verify(task, llm, spec, use_cache=not live_baselines,
-                                 trace_path=tdir / f"{spec.label}.verify.json")
+                                 trace_path=tdir / f"{spec.label}.verify.json", repair=verify_repair)
         rows.append(row)
         # Survives interruption and a later failure in this task.
         with (tdir / "completed.jsonl").open("a", encoding="utf-8") as fh:
@@ -142,6 +143,9 @@ def main() -> None:
     ap.add_argument("--skip-verify", action="store_true")
     ap.add_argument("--out", default="")
     ap.add_argument("--live-baselines", action="store_true", help="uncached restart/verification measurements")
+    ap.add_argument("--verify-repair", default="retry", choices=["retry", "restore"],
+                    help="retry: one uncached model call per flagged output; restore: the original "
+                         "Phase 1 repair (pre-injection output, estimated retry tokens), replayable from cache")
     ap.add_argument("--fault-types", default="", help="optional comma-separated pilot subset")
     ap.add_argument("--cache-dir", default="", help="use a fresh directory for independent experiments")
     ap.add_argument("--cache-only", action="store_true",
@@ -181,7 +185,7 @@ def main() -> None:
     rows, infos, failures = [], [], []
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
         futs = {pool.submit(run_task, t, llm, fault_seeds, raw, args.noise_runs, args.skip_verify,
-                            args.live_baselines, fault_types): t
+                            args.live_baselines, fault_types, args.verify_repair): t
                 for t in tasks}
         for fut in as_completed(futs):
             t = futs[fut]
@@ -217,7 +221,9 @@ def main() -> None:
             "expected_fault_runs": len(tasks) * sum(not fault_types or s.ftype in fault_types for s in fault_matrix(fault_seeds)),
             "measurement_mode": "live_baselines" if args.live_baselines else "cached_replay",
             "client_min_interval_s": getattr(llm, "min_interval_s", 0.0),
-            "verification_repair": "one_uncached_model_retry", "recompute_cost": "token_estimate"}
+            "verification_repair": ("one_uncached_model_retry" if args.verify_repair == "retry"
+                                    else "restore_pre_injection_output_estimated_retry_tokens"),
+            "recompute_cost": "token_estimate"}
     meta["packages"] = {}
     for package in ("pandas", "matplotlib", "jsonschema", "anthropic"):
         try:

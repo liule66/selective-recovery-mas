@@ -7,7 +7,7 @@ import json
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from ..agents import agents
 from ..env.environment import TOOLS, Environment
@@ -102,14 +102,21 @@ def _fill(node: Node, res: LLMResult) -> None:
 
 
 def run_workflow(task: Task, llm: LLM, fault: FaultSpec | None = None, verify: bool = False,
-                 env: Environment | None = None, tag: str = "", use_cache: bool = True) -> RunResult:
+                 env: Environment | None = None, tag: str = "", use_cache: bool = True,
+                 verify_repair: str = "retry") -> RunResult:
     """Run the workflow once.
 
     env: continue on an existing environment (used by the full-restart baseline).
     tag: prefix for step names written into the environment's access log.
     verify: always-verify baseline; a flagged output is regenerated once with the
             (transient) fault removed, and the verifier's and retry's tokens are counted.
+    verify_repair: "retry" regenerates a flagged output with one uncached model call.
+            "restore" is the original Phase 1 repair: it reuses the pre-injection output and
+            charges one retry's tokens as an estimate. It is optimistic, but it needs no new
+            model calls, so the original Claude verification can be replayed from the cache.
     """
+    if verify_repair not in ("retry", "restore"):
+        raise ValueError(f"unknown verify_repair {verify_repair!r}")
     started = time.perf_counter()
     env = env if env is not None else Environment(workspace=task.files())
     inj = Injector(task, fault) if fault else None
@@ -133,6 +140,15 @@ def run_workflow(task: Task, llm: LLM, fault: FaultSpec | None = None, verify: b
         out.retry_tokens += res.input_tokens + res.output_tokens
         node.retry = asdict(res)
 
+    def repair(node: Node, res: LLMResult, regenerate: Callable[[], LLMResult]) -> LLMResult:
+        """The result that replaces a flagged output; `res` is the model's pre-injection output."""
+        if verify_repair == "restore":
+            out.retry_tokens += res.input_tokens + res.output_tokens
+            return res
+        retry = regenerate()
+        record_retry(node, retry)
+        return retry
+
     # ------------------------------------------------------------- research (fan-out)
     facts: list[Fact] = []
     for src in task.sources:
@@ -145,9 +161,8 @@ def run_workflow(task: Task, llm: LLM, fault: FaultSpec | None = None, verify: b
         _fill(node, res)
         if verify and run_verifier(node, "researcher", f"{text}\n\nInstructions: {src.extract}",
                                    {"records": recs}, bool(changed), res):
-            retry = agents.research(llm, src, text, use_cache=False)
-            record_retry(node, retry)
-            recs, changed = _clean_records(retry.data), []
+            fixed = repair(node, res, lambda: agents.research(llm, src, text, use_cache=False))
+            recs, changed = _clean_records(fixed.data), []
             node.output, node.injected = recs, False
         src_facts = facts_from_records(src.source_id, recs)
         node.produces_facts = [f.fact_id for f in src_facts]
@@ -166,9 +181,8 @@ def run_workflow(task: Task, llm: LLM, fault: FaultSpec | None = None, verify: b
     _fill(node, res)
     plan_inputs = f"Goal: {task.goal}\n\nFacts:\n" + "\n".join(f.render() for f in facts)
     if verify and run_verifier(node, "planner", plan_inputs, {"steps": steps}, bool(changed_steps), res):
-        retry = agents.plan(llm, task, facts, use_cache=False)
-        record_retry(node, retry)
-        steps, changed_steps = _clean_steps(retry.data), []
+        fixed = repair(node, res, lambda: agents.plan(llm, task, facts, use_cache=False))
+        steps, changed_steps = _clean_steps(fixed.data), []
         node.output, node.injected = steps, False
     if changed_steps:
         trace.origin = {"unit": "plan", "steps": changed_steps, "applied": inj.applied}
@@ -201,9 +215,8 @@ def run_workflow(task: Task, llm: LLM, fault: FaultSpec | None = None, verify: b
             inputs = (f"Plan step: {json.dumps(s)}\nFacts:\n" + "\n".join(f.render() for f in cited)
                       + "\nState:\n" + "\n".join(f"{k} = {v}" for k, v in state.items()))
             if run_verifier(node, "executor", inputs, call, injected, res):
-                retry = agents.execute(llm, s, cited, state, use_cache=False)
-                record_retry(node, retry)
-                call, injected = _clean_call(retry.data), False
+                fixed = repair(node, res, lambda: agents.execute(llm, s, cited, state, use_cache=False))
+                call, injected = _clean_call(fixed.data), False
                 node.output, node.injected = call, False
         if injected:
             trace.origin = {"unit": nid, "applied": inj.applied}

@@ -28,6 +28,23 @@ def test_verification_retries_uncached_and_records_actual_usage(tmp_path):
     assert rec["elapsed_s"] > 0
 
 
+def test_restore_repair_replays_from_cache_without_new_calls(tmp_path):
+    task = make_suite((0,))[0]
+    spec = FaultSpec("plan", "injected_instruction", 0)
+    first = MockLLM(cache_dir=tmp_path / "cache")
+    run_workflow(task, first)
+    original = run_workflow(task, first, spec, verify=True, verify_repair="restore")
+    replay = MockLLM(cache_dir=tmp_path / "cache")
+    replay.cache_only = True
+    run = run_workflow(task, replay, spec, verify=True, verify_repair="restore")
+    assert replay.stats.live_calls == 0
+    assert run.flagged == original.flagged and run.retry_tokens == original.retry_tokens > 0
+    assert not any(n.retry for n in run.trace.nodes.values())
+    assert run.check["success"] and not run.check["unauthorized_action"]
+    with pytest.raises(ValueError):
+        run_workflow(task, replay, verify=True, verify_repair="rewind")
+
+
 def test_gateway_budget_cache_and_validation(monkeypatch, tmp_path):
     monkeypatch.setenv("OPENAI_API_KEY", "fake-test-key")
     monkeypatch.setenv("OPENAI_BASE_URL", "https://gateway.example/v1")
