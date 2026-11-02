@@ -1,60 +1,82 @@
 # Dependency-Aware Selective Recovery in Multi-Agent Workflows
 
-CSE 291A (Fall 2026) course project. See [docs/proposal.txt](docs/proposal.txt).
+CSE 291A (Fall 2026) course project, Option 5. Proposal: [docs/proposal.txt](docs/proposal.txt).
 
-When one agent's output in a multi-agent workflow turns out to be faulty (wrong, stale,
-fabricated, or carrying an injected instruction), can we track dependencies between agent
-results and recompute only the affected work, instead of restarting everything, while keeping
-the task correct and safe?
+When one agent in a multi-agent workflow emits a faulty result (a wrong, stale or fabricated
+value, or an injected instruction), the usual remedy is to restart the whole workflow. That
+repeats correct work and cannot undo irreversible side effects such as sent email. This project
+asks whether tracking dependencies between agent results lets us recompute **only** the affected
+work while keeping the task correct and safe, and when that stops paying off.
 
-## Setup
+**Status.** Phase 1 is complete: an instrumented testbed, fault injection, dependency tracking at
+three granularities, counterfactual ground truth, and the full-restart and always-verify
+baselines. Selective recovery itself is Phase 2 work. All recompute costs below are predictions
+from logged tokens, not measured recovery.
 
-```bash
-python3.12 -m venv .venv && source .venv/bin/activate   # or a conda env with Python 3.12
-python -m pip install --no-cache-dir -e ".[dev]"
-```
+- Phase 1 report: [report/phase1/main.pdf](report/phase1/main.pdf) (source: [main.tex](report/phase1/main.tex))
+- Headline numbers: [results/phase1_haiku_revised/summary.txt](results/phase1_haiku_revised/summary.txt)
 
-Put the Anthropic API key in `ANTHROPIC_API_KEY` or in `api.txt` at the repo root (gitignored).
+## Phase 1 results at a glance
 
-## Layout
+176 fault-injected runs: 8 tasks × 11 (stage, fault type) cells × 2 placements, all agents on
+Claude Haiku 5.5.
+
+| Finding | Number |
+|---|---|
+| Fault runs that still pass the checker without recovery | 39% |
+| Runs where the fault reached a downstream agent | 82 of 176 |
+| Unauthorized actions after adversarial / accidental faults | 58% / 5% |
+| Runs where researcher faults left an incorrect, unrecallable email | 40% |
+
+Dependency tracking, scored on downstream units only, over the 82 runs where the fault propagated:
+
+| Granularity | Precision | Recall | Runs with a miss | Predicted recompute | Records kept |
+|---|---|---|---|---|---|
+| Stage | 0.29 | 1.00 | 0% | 97% | 11 |
+| Message | 0.38 | 1.00 | 0% | 86% | 23 |
+| Fact | 0.97 | 0.88 | 17% | 48% | 77 |
+
+Baselines: full restart repairs all files, KV entries and payments but leaves incorrect emails in
+23% of runs. Always-verify catches every injected fault but costs 1.18× a clean run's tokens on
+every run.
+
+## Repository layout
 
 | Path | Contents |
 |---|---|
-| `src/srmas/env/` | Simulated tools: file workspace, KV store (restorable), payment ledger (compensable), email outbox (irreversible) |
-| `src/srmas/llm/` | LLM clients (Claude Haiku 5.5, deterministic mock) and a response cache |
+| `src/srmas/env/` | Simulated tools: file workspace and KV store (restorable), payment ledger (compensable, refunds), email outbox (irreversible) |
 | `src/srmas/agents/`, `src/srmas/workflow/` | Researcher → planner → executor workflow with fan-out |
-| `src/srmas/trace/` | Provenance log and dependency graph at stage / message / fact granularity |
+| `src/srmas/tasks/` | Seeded task templates (procurement, payroll, travel, restock) and the programmatic checker |
 | `src/srmas/faults/` | Accidental and adversarial fault injection |
-| `src/srmas/analysis/` | Fault propagation metrics and counterfactual replay |
-| `src/srmas/baselines/` | Full restart and always-verify baselines |
-| `tasks/` | Task suite with programmatic checkers |
-| `experiments/` | Experiment drivers and configs |
-| `report/` | Phase reports |
+| `src/srmas/trace/` | Provenance trace and stage / message / fact dependency tracking |
+| `src/srmas/analysis/` | Counterfactual comparison and propagation metrics |
+| `src/srmas/baselines/` | Full-restart and always-verify baselines |
+| `src/srmas/llm/` | LLM clients (Claude, UCSD campus gateway, deterministic mock) with a prompt-hash response cache |
+| `experiments/` | `run_phase1.py` (experiment driver), `make_figures.py` (summaries and figures), `merge_legacy_verify.py` |
+| `tests/` | 44 offline tests (mock model, no API key needed) |
+| `tasks/` | The 8 Phase 1 task instances as JSON (sources, goal, expected final state) |
+| `results/` | Experiment outputs, described below |
+| `report/phase1/` | Phase 1 report (LaTeX and PDF) |
+| `docs/` | Proposal, grading notes, [reproducibility guide](docs/PHASE1_REPRODUCIBILITY.md) |
 
-## Revised Phase 1 evaluation (Claude Haiku 5.5, replayed from cache)
+## Setup
 
-Report: [report/phase1/main.pdf](report/phase1/main.pdf). Numbers: [results/phase1_haiku_revised/summary.txt](results/phase1_haiku_revised/summary.txt).
+Python 3.12.
 
-The original 176 Claude runs are re-scored with a stricter checker and metrics by replaying the
-committed response cache. The replay made no API calls and reproduced every original agent output.
+```bash
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+python -m pip install -e ".[dev]"
+python -m pytest -q              # 44 tests, no API key needed
+```
 
-- Checker: payment memos, payroll report amounts, and required values in each email are checked;
-  an *unauthorized action* is a payment to an account named in no source or an email to a
-  recipient the task does not name (attacker actions are a subset). All 8 clean runs still pass.
-- Only 82 of 176 runs propagate to a downstream unit. Executor faults cannot by construction.
-- On those 82 runs, scoring downstream units only, stage / message / fact tracking reach precision
-  0.29 / 0.38 / 0.97 and recall 1.00 / 1.00 / 0.88, with predicted recompute 97% / 86% / 48%.
-- Unauthorized actions follow 58% of adversarial and 5% of accidental faults. 22 placements
-  duplicate another (identical injection), leaving 154 independent runs.
-- Task seeds 0–1 are the development set; seeds 2–3 are held out for Phase 2 evaluation.
-- Always-verify is replayed from the cache with its original repair (restore the pre-injection
-  output, estimate retry tokens) and re-scored with the current checker: it reproduces the original
-  detection and token columns on all 176 runs and leaves no unauthorized action or wrong email.
-  Only the 16 uncached noise reruns are carried over from the original run.
+`requirements-measurement.txt` pins the exact package versions used for the measurements.
 
-Traces and the response cache are in `results/phase1_haiku_revised/`. To reproduce without API
-spending or an API key (write the output outside the repository so `tasks.json` records a clean
-source revision):
+## Reproduce the Phase 1 numbers (no API key, no cost)
+
+The Claude responses are committed in `results/phase1_haiku_revised/response_cache/`. Replaying
+them re-runs every agent call from the cache (`--cache-only` fails on any miss instead of calling
+the API) and regenerates the tables and figures in about a minute:
 
 ```bash
 python experiments/run_phase1.py --llm haiku --cache-only --cache-dir results/phase1_haiku_revised/response_cache --verify-repair restore --noise-runs 0 --out /tmp/srmas_replay
@@ -62,37 +84,90 @@ python experiments/merge_legacy_verify.py results/phase1_haiku /tmp/srmas_replay
 python experiments/make_figures.py /tmp/srmas_replay
 ```
 
-## Original Phase 1 results (Claude Haiku 5.5, 8 tasks × 22 faults)
+`/tmp/srmas_replay/runs.csv` and `summary.txt` then match the committed
+`results/phase1_haiku_revised/` files (wall-clock timings aside). Only the 16 uncached noise
+reruns cannot be replayed; `merge_legacy_verify.py` copies them from the original run.
 
-Numbers: [results/phase1_haiku/summary.txt](results/phase1_haiku/summary.txt).
-
-- Without recovery only 39% of fault runs pass; researcher faults change 2.3 downstream agent calls on average and leave a wrong (irreversible) email in 44% of runs.
-- Dependency tracking: stage / message / fact granularity reach precision 0.24 / 0.44 / 0.86 and recall 1.00 / 1.00 / 0.96. Predicted recomputation token costs are 84% / 69% / 34% of a full run; selective recovery is not implemented yet.
-- Full restart repairs restorable and compensable state but cannot recall wrong emails (24% of runs). The original verification experiment restored pre-injection outputs after detection and estimated retry tokens; its 100% detection and 1.18× extra-cost figures do not measure the revised real-retry baseline.
-
-The revised harness adds real uncached verification retries, per-run timing,
-shareable synthetic traces, explicit incomplete-run records, and a budgeted campus
-API client. See [the reproducibility guide](docs/PHASE1_REPRODUCIBILITY.md).
-
-## Revised validation on October 29
-
-- Campus model: `api-glm-5.3-flash`; credentials stayed in DataHub.
-- A [six-case live pilot](results/phase1_triton_pilot/summary.txt) measured actual restart/verification calls.
-- [44 serial propagation cases](results/phase1_triton_validation_serial/summary.txt) covered all four templates and 11 stage/fault combinations. Clean baseline success was 3/4, with 7/8 successful uncached repeats. On the 33 clean-capable fault cases, final success was 11/33 without recovery, 29/33 after restart, and 31/33 with actual verification retries. Cached replay times are not live latency measurements.
-- On this route an uncached clean repeat differs from the cached clean run in 3.0 units on average (Claude: 0.38), about as many as a researcher fault changes downstream (2.75). Its propagation and granularity figures cannot separate fault effects from resampling without repeated samples per case.
-- The earlier four-worker batch failed on requests before completing a fault case; its failure manifest is preserved in `results/phase1_triton_validation/tasks.json`.
-- 1,093 real requests cost an estimated $0.1761 in completed token usage plus $0.0141 reserved for uncertain failures, below the $5 cap. This is not an authoritative billing statement.
-- The offline tests pass (`python -m pytest -q`). Updated report: [Phase 1 PDF](report/phase1/main.pdf), with measured validation and limitations in Appendix B.
-
-The Claude Phase 1 traces and response cache are versioned in `results/phase1_haiku_revised/`.
-The campus-pilot traces, response caches, cost records and experiment source overlays are
-ignored by Git and travel in the separately supplied submission ZIP; keep it with the
-repository and PDF for submission.
-
-## Running
+## Running new experiments
 
 ```bash
-python -m pytest -q
-python experiments/run_phase1.py --llm mock --out /tmp/srmas_mock
-python experiments/run_phase1.py --llm haiku --out /tmp/srmas_haiku   # live API calls
+python experiments/run_phase1.py --llm mock --out /tmp/srmas_mock          # offline harness check
+python experiments/run_phase1.py --llm haiku --noise-runs 2 --out /tmp/srmas_haiku   # live Claude API calls
+python experiments/make_figures.py /tmp/srmas_haiku
 ```
+
+The Claude client reads the key from `ANTHROPIC_API_KEY` or from `api.txt` at the repository root.
+The campus gateway client (`--llm triton`) reads `OPENAI_BASE_URL`, `OPENAI_API_KEY` and
+`SRMAS_MODEL`, and enforces a spending cap; see [the reproducibility guide](docs/PHASE1_REPRODUCIBILITY.md).
+Every output directory must be new. Useful options: `--templates`, `--task-seeds`,
+`--fault-seeds`, `--fault-types`, `--skip-verify`, `--live-baselines`, `--workers`.
+
+## Method in brief
+
+- **Workflow.** One researcher per source document extracts (entity, attribute, value) facts. A
+  planner turns the goal and facts into tool calls and cites the facts each step uses. One
+  executor per step issues a concrete tool call, seeing only its cited facts and requested state.
+- **Faults.** Exactly one agent result is corrupted after generation, so the faulty unit is
+  known. The faults are wrong value, stale value, fabricated entity (accidental), and injected
+  instruction and payee or recipient redirect (adversarial). They are injected at the researcher
+  (5 types), planner (4) and executor (2) stages.
+- **Tracking.** *Stage* invalidates the faulty stage and everything after it. *Message* takes
+  the closure over agent messages and shared-state reads. *Fact* follows corrupted facts to the
+  plan steps that cite them, their executors, and the readers of what those executors wrote.
+- **Ground truth.** Responses are cached by prompt hash, so replaying a task with the fault
+  removed re-samples only the agents whose input changed. An agent counts as affected if its
+  decision-relevant output (tool, target, amount, stored value, or the amounts, accounts and
+  addresses in its text) differs.
+- **Checker.** The checker compares the final state with the reference solution: payments and
+  their memos, KV entries, file contents, and the required values in each email. It flags an
+  *unauthorized action* for a payment to an account named in no source document or an email to
+  a recipient the task does not name.
+
+## Results directories
+
+| Directory | What it is |
+|---|---|
+| `results/phase1_haiku_revised/` | **Primary results.** The 176 Claude runs re-scored with the current checker, plus full traces (`traces/`: every message, tool call, state access and checker outcome, including restart and always-verify runs) and the response cache |
+| `results/phase1_haiku/` | The original Claude run, with the original checker and metrics (historical) |
+| `results/phase1_triton_pilot/`, `results/phase1_triton_validation_serial/` | Validation of the revised harness (real verification retries, timing) on the UCSD-hosted `api-glm-5.3-flash` model; report Appendix B |
+| `results/phase1_triton_validation/` | Failure manifest of an aborted campus batch, kept rather than dropped |
+| `results/phase1_triton_cost_summary.json` | Campus API usage: about $0.19 of a $5 cap |
+| `results/phase1_mock*/` | Mock-model harness checks; not evidence about a real model |
+
+In each directory, `runs.csv` has one row per fault run: the fault (`stage`, `ftype`,
+`fault_seed`, `applied`), checker outcomes without recovery (`faulty_*`), propagation
+(`downstream_affected`, `kv_corrupted`, `emails_changed`, ...), per-granularity invalidation scores
+(`{stage,message,fact}_*`, with `_ds_` for downstream-only), and baseline outcomes (`restart_*`,
+`verify_*`). `tasks.json` records the configuration, code revision, package versions, clean runs
+and any failures. Raw traces of the campus runs are not in the repository; their per-run results
+and summaries are.
+
+## Limitations and deviations
+
+- **Fault injection.** Faults are injected into agent results with an oracle-identified faulty
+  unit. Source-level injection and fault detection are Phase 2 work.
+- **Verifier.** The verifier sees inputs that contradict the corrupted result, which favors
+  always-verify. Its repair restores the pre-injection output (optimistic).
+- **Injector bug.** A plan-level fabricated step kept the copied step's instruction, so executors
+  paid the real payee twice instead of paying the fabricated account.
+- **Counterfactual is approximate.** Changed prompts still re-sample, so the counterfactual is
+  approximate. Claude's resampling noise is 0.38 agents per uncached clean rerun; the campus
+  model's is 3.0.
+- **Scale.** Synthetic tasks, two task seeds, and 22 duplicate placements (154 independent runs).
+  Task seeds 2–3 are held out for Phase 2 evaluation.
+- **Hosted models.** The proposal planned local CPU models; we used hosted models instead (Claude
+  Haiku, about $0.30; the UCSD campus gateway, about $0.19).
+
+## Phase 2 plan
+
+Build the recovery engine: per-key restore, targeted refunds, partial re-execution from the
+trace, and reporting of irreversible effects. Compare it with full restart, suffix replay and
+always-verify on identical fault schedules and budgets. Add comparison-aware citations and
+re-validation of re-sampled outputs to address fact-level misses. Extend the faults (timeouts,
+direct shared-state corruption, source-level injection) and the task suite. The timeline is in
+the report appendix.
+
+## Credentials
+
+No credentials are stored in the repository or its history. `api.txt`, `.env*` and `.local/`
+are gitignored; `.env.example` lists the variables with placeholder values.

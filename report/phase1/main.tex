@@ -25,7 +25,7 @@ study whether dependency tracking can confine recovery to the work a fault actua
 We inject 176 faults and compare each run with its counterfactual replay. In the 82 runs where
 the fault reached downstream agents, fact-level provenance finds 88\% of the affected
 downstream units with 97\% precision, at an estimated 48\% of full-run token cost. Stage tracking
-finds all of them but recomputes 97\%, with $7\times$ fewer dependency records. These are
+finds all of them but recomputes 97\%, while keeping $7\times$ fewer dependency records. These are
 invalidation estimates; selective execution is Phase~2 work.
 \end{abstract}
 
@@ -78,7 +78,7 @@ cost $\sum_{v\in\hat{A}_g}c_v/\sum_{v\in V}c_v$ ($c_v$: tokens of $v$), and book
 fault-free run and report irreversible effects as unrecoverable.
 
 \section{Methodology}
-\para{Original workload.} Four seeded templates (procurement, payroll, travel booking,
+\para{Workload and design.} Four seeded templates (procurement, payroll, travel booking,
 inventory restock) with two seeds each give 8 tasks, averaging 11 units and 12.8K tokens per
 clean run. A reference solver derives the expected final state. The checker verifies payments
 with their memos, key--value entries, file values, and the required values in each email. It
@@ -142,8 +142,8 @@ Fact-level (est.) & --    & --   & --   & 0.34$\times$ \\
 \bottomrule
 \end{tabular}
 \vspace{-0.5em}
-\caption{Baselines over 176 fault runs. State excludes email. Costs are tokens relative to a
-clean run; the verifier's retry cost is estimated. All rows use the current checker.}
+\caption{Baselines over 176 fault runs, current checker. State excludes email. Costs are tokens
+vs.\ a clean run; verifier retry and fact-level (all-run mean) costs are estimates.}
 \label{tab:base}
 \vspace{-1.2em}
 \end{table}
@@ -157,20 +157,19 @@ farthest (2.3 downstream units) and leave an incorrect, unrecallable email in 40
 Unauthorized actions follow 58\% of adversarial faults and 5\% of accidental ones (fabricated
 payees). Executors carry out injected plan steps and redirected calls by construction, as they
 see only their own step. The informative contrast is at the researcher: an injected instruction
-caused no unauthorized action, while a redirected account did in 88\% of runs. This contrast
-rests on one injection wording.
+caused no unauthorized action, while a redirected account did in 88\% of runs (one injection
+wording).
 
 \para{RQ2: Granularity (Table~\ref{tab:gran}).} We score only downstream units, since every
 policy invalidates $v_0$, and only runs where the fault propagated. Stage and message tracking
 never under-invalidate, but discard 6.7 and 5.0 unaffected units per fault and recompute 97\%
 and 86\% of a run. Fact tracking keeps $7\times$ more records and recomputes 48\% at precision
-0.97, but misses affected units in 14 of 82 runs (17\%), all of them researcher faults. Removing
-duplicate placements leaves these figures within 0.01. Three causes recur. (i)~\emph{Implicit comparative dependencies}: a corrupted price changes which
+0.97, but misses affected units in 14 of 82 runs (17\%), all of them researcher faults (all figures move by at most 0.01 without duplicate
+placements). Three causes recur. (i)~\emph{Implicit comparative dependencies}: a corrupted price changes which
 option is cheapest, and steps for the new choice cite only its own facts. (ii)~\emph{Collateral
 re-sampling}: a changed prompt re-samples the planner, which may alter steps citing no
 corrupted fact. (iii)~\emph{Ambiguity}: a fabricated supplier led the planner to drop a payee
-without citing it. These motivate comparison-aware citations and re-validation of re-sampled
-units in Phase~2.
+without citing it. Phase~2 targets these with comparison-aware citations and re-validation.
 
 \para{RQ3: Baselines (Table~\ref{tab:base}).} Full restart repairs all restorable and
 compensable state. It cannot retract email, leaving incorrect emails in
@@ -182,21 +181,19 @@ is an optimistic repair model.
 \section{Related Work}
 Selective re-execution follows intrusion/rollback recovery~\cite{retro,rollback}; compensation
 and fact tracking follow sagas and provenance~\cite{sagas,provenance}. Agent security and failure
-studies~\cite{greshake,agentdojo,mast} motivate our injections. REVISE~\cite{revise} addresses
-online revisions, and dependency-guided rollback~\cite{dgrr} repairs faulty persistent memories.
-We examine fault propagation across agents and shared state.
+studies~\cite{greshake,agentdojo,mast} motivate our injections. REVISE~\cite{revise} and
+dependency-guided rollback~\cite{dgrr} repair online revisions and faulty memories of one
+agent; we study faults that spread across agents and shared state.
 
 \section{Limitations and Next Steps}
 \emph{Internal validity}: faults are injected into results with an oracle-identified $v_0$;
 the verifier sees inputs contradicting the corrupted result, which favors always-verify; and
-fact-level cost is estimated from logged tokens. Changed prompts can still
-resample, so counterfactual comparison is approximate. Fine-grained oracle locations favor
+fact-level cost is estimated from logged tokens. Re-sampling makes counterfactuals
+approximate. Fine-grained oracle locations favor
 the fact policy. A plan-level fabricated step kept the copied step's instruction, so executors
 paid the real payee twice instead of the fabricated account. \emph{External validity}: synthetic
-tasks, two task seeds. All metrics are replayed from the committed Claude cache without API
-calls. \emph{Deviation}: hosted models replace the proposed local CPU models (Haiku, about
-\$0.30; a campus model in Appendix~B). \emph{Phase~2} builds recovery and compares it with
-these baselines and suffix replay on identical faults.
+tasks, two task seeds. \emph{Deviation}: hosted models replace the proposed local CPU models
+(Haiku, about \$0.30; a campus model in Appendix~B).
 
 {\footnotesize
 \begin{thebibliography}{9}
@@ -223,7 +220,7 @@ Rollback Repair for Memory-Augmented Agents. arXiv:2608.10502v2, 2026.
 \appendix
 \section{Timeline and Milestones}
 \small
-\begin{tabular}{@{}p{0.2\columnwidth}p{0.74\columnwidth}@{}}
+\begin{tabular}{@{}p{0.25\columnwidth}p{0.69\columnwidth}@{}}
 \toprule
 Dates & Milestone \\
 \midrule
