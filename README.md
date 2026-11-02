@@ -167,6 +167,12 @@ re-validation of re-sampled outputs to address fact-level misses. Extend the fau
 direct shared-state corruption, source-level injection) and the task suite. The timeline is in
 the report appendix.
 
+## Use of AI tools
+
+AI coding assistants helped write parts of the experiment code. The authors designed the
+experiments, reviewed the code, and take full responsibility for the experimental methods and
+results reported here.
+
 ## Credentials
 
 No credentials are stored in the repository or its history. `api.txt`, `.env*` and `.local/`
