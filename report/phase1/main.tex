@@ -139,7 +139,7 @@ excludes email. Tokens vs.\ a clean run; verify + restore and fact-level (all-ru
 \end{table}
 
 \section{Evaluation}
-\para{RQ1: Propagation (Fig.~\ref{fig:prop}).} Of 56 clean runs, 55 pass the checker; without recovery, only 36--39\% of fault runs do.
+\para{RQ1: Propagation (Fig.~\ref{fig:prop}).} Of 40 clean runs, 39 pass the checker; without recovery, only 36--39\% of fault runs do.
 The samples agree: 82--84 of 176 runs propagate, and pass, propagation and unauthorized outcomes
 each match across all three in 92--95\% of cases. No agent reads a payment's result, so executor
 faults cannot propagate, and executors corrected 94 of 96 plan-level wrong amounts and redirects
@@ -181,20 +181,20 @@ even without a fault (41.3\,s). Clean runs, one at a time, took a median of 20.9
 Selective re-execution follows intrusion/rollback recovery~\cite{retro,rollback}; compensation
 and fact tracking follow sagas and provenance~\cite{sagas,provenance}; agent security and failure
 studies~\cite{greshake,agentdojo,mast} motivate our faults. REVISE~\cite{revise} and
-dependency-guided rollback~\cite{dgrr} repair online revisions and faulty memories of one
+dependency-guided rollback~\cite{dgrr} repair revisions and faulty memories of one
 agent; we study faults spreading across agents and shared state.
 
 \section{Limitations and Next Steps}
 \emph{Internal validity}: faults are injected into results with an oracle-identified $v_0$,
 which favors the fact policy; the verifier sees inputs contradicting the corrupted result, which
 favors always-verify. A plan-level fabricated step kept the original
-instruction, so executors paid the real payee twice in 36 of 48 runs. \emph{External validity}:
-synthetic tasks, two task seeds. \emph{Deviation}: hosted models replace the proposed CPU models
+instruction, so executors paid the real payee twice when it named the account (36 of 48 runs) and
+otherwise the fabricated one, which alone spreads accidental unauthorized actions over 5--14\%. \emph{External validity}:
+synthetic tasks, two seeds. \emph{Deviation}: hosted models replace the proposed CPU models
 (Haiku, about \$1.05; campus: Appendix~B). \emph{Next steps}: fact tracking could halve
-recomputation, with wrong reuse in 4--12\% of propagating researcher faults. Phase~2 tests this
-against full restart, suffix replay and always-verify, and adds timeout faults and concurrent
-writers. State restore comes first, per the proposal feedback: a whole-run snapshot breaks once
-other agents write after the fault (Appendix~A).
+recomputation, with wrong reuse in 4--12\% of propagating researcher faults. Phase~2 tests it
+against full restart, suffix replay and always-verify. State restore comes first, per the proposal feedback: a whole-run snapshot breaks once
+others write after the fault (Appendix~A).
 
 {\footnotesize
 \begin{thebibliography}{9}

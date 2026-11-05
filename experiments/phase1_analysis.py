@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from srmas.analysis.misses import missed_wrong_units, state_fault_readers, wrong_state_emails  # noqa: E402
-from srmas.tasks.base import Task  # noqa: E402
+from srmas.tasks.base import ACCOUNT_RE, Task  # noqa: E402
 from srmas.tasks.templates import make_suite  # noqa: E402
 
 GRAN = ["stage", "message", "fact"]
@@ -168,6 +168,20 @@ def fact_misses(d: pd.DataFrame, tasks: dict[str, Task], out: Path) -> str:
             + m[m.effect == "wrong result"].groupby("cause").size().to_string())
 
 
+def fabricated_steps(d: pd.DataFrame, out: Path) -> tuple[int, int]:
+    """A plan-level fabricated step keeps the copied instruction. Returns the runs where that
+    instruction names an account, and the runs where naming one coincides with overpaying."""
+    named = matching = 0
+    for r in d[(d.stage == "plan") & (d.ftype == "fabricated")].itertuples():
+        trace = load_trace(out, r)
+        step_id = trace["origin"]["steps"][0]
+        step = next(s for s in trace["nodes"]["plan"]["output"] if s["step_id"] == step_id)
+        names = bool(ACCOUNT_RE.search(step["instruction"]))
+        named += names
+        matching += names == (r.faulty_overpaid > 0)
+    return named, matching
+
+
 def sample_stats(out: Path, tasks: dict[str, Task]) -> dict[str, float]:
     df = pd.read_csv(out / "runs.csv")
     d = df[df.injected.astype(bool)].copy()
@@ -178,6 +192,7 @@ def sample_stats(out: Path, tasks: dict[str, Task]) -> dict[str, float]:
     wrong = int((miss_rows(d, tasks, out).effect == "wrong result").sum())
     unauthorized = d.faulty_unauthorized_action.astype(float)
     cell = lambda stage, ftype: (d.stage == stage) & (d.ftype == ftype)  # noqa: E731
+    named, matching = fabricated_steps(d, out)
     return {"clean pass": sum(t["clean_success"] for t in meta["tasks"]), "fault runs": len(d),
             "pass": d.faulty_success.astype(float).mean(), "propagated": len(p),
             "unauthorized": unauthorized.mean(), "wrong email": (bad > 0).mean(),
@@ -187,6 +202,8 @@ def sample_stats(out: Path, tasks: dict[str, Task]) -> dict[str, float]:
             "researcher injection unauthorized": unauthorized[cell("research", "injected_instruction")].mean(),
             "planner wrong/redirect propagated": int(d.propagated[cell("plan", "wrong_value") | cell("plan", "malicious_redirect")].sum()),
             "planner fabricated, real payee overpaid": int((d.faulty_overpaid[cell("plan", "fabricated")] > 0).sum()),
+            "planner fabricated, instruction names an account": named,
+            "planner fabricated, overpaid iff it names one": matching,
             "stage recompute": p.stage_recompute_frac.mean(), "message recompute": p.message_recompute_frac.mean(),
             "fact precision": p.fact_ds_precision.mean(), "fact recall": p.fact_ds_recall.mean(),
             "fact miss runs": (p.fact_ds_under > 0).mean(), "fact recompute": p.fact_recompute_frac.mean(),
@@ -206,14 +223,16 @@ def repeats(tasks: dict[str, Task], out: Path) -> str:
     clean = [(t["clean_success"], t.get("noise", [])) for p in dirs.values()
              for t in json.loads((p / "tasks.json").read_text(encoding="utf-8"))["tasks"]]
     latency = json.loads((RESULTS / "phase1_haiku_latency" / "tasks.json").read_text(encoding="utf-8"))
-    outcomes = ([ok for ok, _ in clean] + [n["success"] for _, noise in clean for n in noise]
-                + [n["success"] for t in latency["tasks"] for n in t["noise"]])
+    current = [ok for ok, _ in clean] + [n["success"] for t in latency["tasks"] for n in t["noise"]]
+    original = [n["success"] for _, noise in clean for n in noise]
     agree = {c: (pd.concat([r[c] for r in runs], axis=1).astype(str).nunique(axis=1) == 1).mean()
              for c in ("faulty_success", "propagated", "faulty_unauthorized_action")}
     return (f"Independent samples of the fault matrix:\n{stats.round(3).to_string()}\n"
             "Cases where every sample gives the same outcome: "
             + ", ".join(f"{k} {v:.1%}" for k, v in agree.items())
-            + f"\nClean runs over all samples and uncached reruns: {sum(outcomes)}/{len(outcomes)} pass.")
+            + f"\nClean runs under the current checker, over all samples and uncached reruns: {sum(current)}/{len(current)} "
+            f"pass. Another {sum(original)}/{len(original)} passed the original checker, which is looser; their traces "
+            "were not kept, so they cannot be re-scored.")
 
 
 def live_baselines() -> str:

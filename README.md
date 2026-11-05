@@ -24,7 +24,7 @@ from the first sample unless a range is given.
 
 | Finding | Number |
 |---|---|
-| Clean runs that pass the checker | 55 of 56, across samples and uncached reruns |
+| Clean runs that pass the current checker | 39 of 40, across samples and uncached reruns (16 earlier reruns passed the looser original checker; their traces were not kept) |
 | Fault runs that still pass the checker without recovery | 39% (36–39%) |
 | Runs where the fault reached a downstream agent | 82 of 176 (82–84) |
 | Cases with the same pass / propagation / unauthorized outcome in all three samples | 94% / 92% / 95% |
@@ -218,8 +218,10 @@ and summaries are.
 - **Verifier.** The verifier sees inputs that contradict the corrupted result, which favors
   always-verify. Over the 176 runs its repair restores the pre-injection output (optimistic); only
   the 44 live cases use a real retry.
-- **Injector bug.** A plan-level fabricated step kept the copied step's instruction, so in 36 of 48
-  runs across samples executors paid the real payee twice instead of paying the fabricated account.
+- **Injector bug.** A plan-level fabricated step kept the copied step's instruction. When that text
+  named the account (36 of 48 runs across samples, from 18 of 24 plans), executors followed it and
+  paid the real payee twice; otherwise they paid the fabricated account. This alone spreads
+  accidental unauthorized actions over 5–14%.
 - **Counterfactual is approximate.** Changed prompts still re-sample, so the counterfactual is
   approximate. Claude's resampling noise is 0.38 agents per uncached clean rerun (in both sets of 16); the campus
   model's is 3.0.
@@ -227,8 +229,9 @@ and summaries are.
   Claude's live timing was measured on 2026-11-04 from a laptop: 16 clean reruns one at a time, and
   the 44 baseline cases four tasks at a time. The later campus validation spaces requests by at
   least 1.25 s, so its timings mostly reflect that spacing.
-- **Failed clean run.** One fresh clean run (payroll-1, second repeat) withheld its email after the
-  planner miscomputed a check value. Its 22 fault runs stay in the results.
+- **Failed clean run.** In one fresh clean run (payroll-1, second repeat) the planner summed the
+  payments to 9920.51 instead of 10020.51 and told the executor to send only if the stored total
+  matched, so the executor withheld the email. Its 22 fault runs stay in the results.
 - **Fault coverage.** Timeouts are not injected in Phase 1. Shared state is corrupted directly only
   in the separate 16-run experiment, and no agent writes concurrently.
 - **Intervals.** The 95% intervals resample tasks, so they show between-task spread. Model sampling
