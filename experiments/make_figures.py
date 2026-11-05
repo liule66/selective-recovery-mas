@@ -57,7 +57,7 @@ def fig_propagation(d: pd.DataFrame, out: Path) -> None:
     combos = [(s, f) for s in STAGE_ORDER for f in FTYPE_ORDER if ((d.stage == s) & (d.ftype == f)).any()]
     g = d.groupby(["stage", "ftype"])
     labels = [f"{s}: {SHORT[f]}" for s, f in combos]
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(7.0, 1.8), gridspec_kw={"width_ratios": [1, 1.25]})
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(7.0, 1.65), gridspec_kw={"width_ratios": [1, 1.25]})
     y = range(len(combos))[::-1]
     a1.barh(list(y), [g.get_group(c)["downstream_affected"].mean() for c in combos], height=0.7,
             color=[SERIES[STAGE_ORDER.index(s)] for s, _ in combos], edgecolor="white")

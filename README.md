@@ -19,16 +19,19 @@ from logged tokens, not measured recovery.
 ## Phase 1 results at a glance
 
 176 fault-injected runs: 8 tasks × 11 (stage, fault type) cells × 2 placements, all agents on
-Claude Haiku 5.5.
+Claude Haiku 5.5. The whole matrix was sampled three times with no shared responses. Numbers are
+from the first sample unless a range is given.
 
 | Finding | Number |
 |---|---|
-| Clean runs that pass the checker | 8 of 8 (uncached reruns: 32 of 32) |
-| Fault runs that still pass the checker without recovery | 39% |
-| Runs where the fault reached a downstream agent | 82 of 176 |
-| Unauthorized actions after adversarial / accidental faults | 58% / 5% (32 of the 46 adversarial runs are by construction) |
+| Clean runs that pass the checker | 55 of 56, across samples and uncached reruns |
+| Fault runs that still pass the checker without recovery | 39% (36–39%) |
+| Runs where the fault reached a downstream agent | 82 of 176 (82–84) |
+| Cases with the same pass / propagation / unauthorized outcome in all three samples | 94% / 92% / 95% |
+| Unauthorized actions after adversarial / accidental faults | 58% / 5–14% (32 of the 46 adversarial runs are by construction) |
 | Runs where researcher faults left an incorrect, unrecallable email | 40% |
 | Runs with a wrong KV value that also sent an incorrect email reading it | 27 of 27 (the read is the only visible source in at most 6) |
+| Stored KV value corrupted directly (plan and cited facts stay correct): emails that sent it | 12 of 16 (2 more flagged the mismatch, 2 kept the plan's value) |
 
 Dependency tracking, scored on downstream units only, over the 82 runs where the fault propagated:
 
@@ -40,21 +43,32 @@ Dependency tracking, scored on downstream units only, over the 82 runs where the
 | Fact, 32 planner faults | 1.00 | 1.00 | 0% | 43% | |
 | Fact, 50 researcher faults | 0.96 | 0.80 | 28% | 51% | |
 
+Over the three samples, fact-level recall is 0.88–0.89, runs with a miss 14–17% and predicted
+recompute 48–49%.
+
 The overall fact-level recall flatters the policy. In all 32 propagating planner faults the affected
 units are just the injected steps' own executors, so any tracker finds them. Every miss is a
 researcher fault: 14 of 50 runs (accidental 16%, adversarial 47%). Six of them leave a wrong result
-(12% of propagating researcher faults, 7% of all propagated runs); the other 8 only change a
-signature, for example a report that adds a correct number.
+(12% of propagating researcher faults, 4–12% across samples, 7% of all propagated runs); the other 8
+only change a signature, for example a report that adds a correct number.
 
-Baselines, replayed: full restart leaves incorrect emails in 23% of runs (27% of accidental, 17% of
-adversarial faults). Its 100% state correctness is by construction, because a replayed restart
-reuses the cached clean responses. Always-verify detects every injected fault at an estimated 1.18×
-a clean run's tokens on fault runs and 1.04× on clean runs; both its detection and its repair are
-optimistic (see Limitations).
+Baselines, replayed over the 176 runs: full restart leaves incorrect emails in 23% of runs (27% of
+accidental, 17% of adversarial faults). State correctness is 100% by construction for both baselines,
+because a replayed restart reuses the cached clean responses and the verifier restores the
+pre-injection output.
+
+Baselines, live on 44 cases (uncached calls, one real retry):
+
+| | State correct | Unauthorized remaining | Wrong email remaining | Extra tokens | Median time |
+|---|---|---|---|---|---|
+| Full restart | 44 of 44 | 4 | 11 | 0.99× | 19.0 s |
+| Verify + retry | 43 of 44 | 0 | 0 | 1.16× | 40.1 s |
+
+Verify detected all 44 faults; in the one failure, the retried plan miscomputed a payment. On clean
+runs it flagged 2 of 44 outputs, cost 1.06× extra tokens and took 41.3 s.
 
 Latency: 16 uncached clean Claude runs, one at a time, took a median of 20.9 s (17.6–32.5 s for
-9–14 units). On the live campus model, full restart took 7.5 s and always-verify 17.3 s (medians
-of 6 cases).
+9–14 units).
 
 Per-class results, intervals, affected stages and timing are in
 [results/phase1_haiku_revised/analysis.txt](results/phase1_haiku_revised/analysis.txt).
@@ -107,7 +121,21 @@ python experiments/phase1_analysis.py /tmp/srmas_replay
 `/tmp/srmas_replay/runs.csv`, `summary.txt`, `analysis.txt` and `fact_misses.csv` then match the committed
 `results/phase1_haiku_revised/` files (wall-clock timings aside). Only the 16 uncached noise
 reruns cannot be replayed; `merge_legacy_verify.py` copies them from the original run.
-`phase1_analysis.py` reads the live timings from `results/phase1_haiku_latency/`.
+`phase1_analysis.py` reads the live timings, repeated samples and live baselines from their own
+result directories below.
+
+The repeated samples and the shared-state experiment can also be replayed without a key, with the
+output in a new directory each time:
+
+```bash
+python experiments/run_phase1.py --llm haiku --cache-only --cache-dir results/phase1_haiku_repeat1/response_cache --skip-verify --out /tmp/srmas_repeat1
+cp -r results/phase1_haiku_revised/response_cache /tmp/srmas_state_cache
+cp results/phase1_haiku_shared_state/response_cache/* /tmp/srmas_state_cache/
+python experiments/run_phase1.py --llm haiku --cache-only --cache-dir /tmp/srmas_state_cache --shared-state --skip-verify --out /tmp/srmas_state
+```
+
+Their `runs.csv` then match the committed files, wall-clock timings aside. The live baselines bypass
+the cache by design, so they cannot be replayed.
 
 ## Running new experiments
 
@@ -123,6 +151,14 @@ cache so nothing else calls the API, then:
 ```bash
 cp -r results/phase1_haiku_revised/response_cache /tmp/srmas_cache
 python experiments/run_phase1.py --llm haiku --cache-dir /tmp/srmas_cache --skip-verify --noise-runs 2 --workers 1 --out /tmp/srmas_latency
+```
+
+To repeat the other live measurements (two fresh matrix samples, the shared-state fault and the 44
+live baseline cases; about $0.75 and 25 minutes), run the script below with an output directory
+outside the repository. `LLM=mock` runs the same steps offline.
+
+```bash
+bash experiments/run_phase1_live.sh /absolute/output/dir
 ```
 
 The Claude client reads the key from `ANTHROPIC_API_KEY` or from `api.txt` at the repository root.
@@ -158,6 +194,9 @@ Every output directory must be new. Useful options: `--templates`, `--task-seeds
 |---|---|
 | `results/phase1_haiku_revised/` | **Primary results.** The 176 Claude runs re-scored with the current checker, plus `analysis.txt`, `fact_misses.csv` (what each fact-level miss left behind), full traces (`traces/`: every message, tool call, state access and checker outcome, including restart and always-verify runs) and the response cache |
 | `results/phase1_haiku_latency/` | 16 later live clean Claude reruns (`tasks.json`, `traces/`): end-to-end timing and a second noise estimate |
+| `results/phase1_haiku_repeat1/`, `results/phase1_haiku_repeat2/` | Two independent samples of the 176-run matrix with fresh response caches (no always-verify; restart traces, which replay the clean run, are not kept) |
+| `results/phase1_haiku_live/` | Uncached full restart and always-verify with a real retry on 44 cases, four tasks at a time |
+| `results/phase1_haiku_shared_state/` | 16 runs that corrupt a stored KV value directly; its cache holds only the responses new to this experiment |
 | `results/phase1_haiku/` | The original Claude run, with the original checker and metrics (historical) |
 | `results/phase1_triton_pilot/`, `results/phase1_triton_validation_serial/` | Validation of the revised harness (real verification retries, timing) on the UCSD-hosted `api-glm-5.3-flash` model; report Appendix B |
 | `results/phase1_triton_validation/` | Failure manifest of an aborted campus batch, kept rather than dropped |
@@ -177,23 +216,27 @@ and summaries are.
 - **Fault injection.** Faults are injected into agent results with an oracle-identified faulty
   unit. Source-level injection and fault detection are Phase 2 work.
 - **Verifier.** The verifier sees inputs that contradict the corrupted result, which favors
-  always-verify. Its repair restores the pre-injection output (optimistic).
-- **Injector bug.** A plan-level fabricated step kept the copied step's instruction, so executors
-  paid the real payee twice instead of paying the fabricated account.
+  always-verify. Over the 176 runs its repair restores the pre-injection output (optimistic); only
+  the 44 live cases use a real retry.
+- **Injector bug.** A plan-level fabricated step kept the copied step's instruction, so in 36 of 48
+  runs across samples executors paid the real payee twice instead of paying the fabricated account.
 - **Counterfactual is approximate.** Changed prompts still re-sample, so the counterfactual is
   approximate. Claude's resampling noise is 0.38 agents per uncached clean rerun (in both sets of 16); the campus
   model's is 3.0.
 - **Timing.** The Claude fault runs are replayed from the cache, and replays are not latency.
-  Claude's live timing comes from 16 clean reruns measured on 2026-11-04 from a laptop. Live restart
-  and always-verify timing comes only from the six-case campus pilot; the later campus validation
-  spaces requests by at least 1.25 s, so its timings mostly reflect that spacing.
-- **Fault coverage.** Timeouts and direct shared-state corruption are not injected in Phase 1.
-- **Intervals.** The 95% intervals resample tasks, so they show between-task spread, not model
-  sampling variation.
+  Claude's live timing was measured on 2026-11-04 from a laptop: 16 clean reruns one at a time, and
+  the 44 baseline cases four tasks at a time. The later campus validation spaces requests by at
+  least 1.25 s, so its timings mostly reflect that spacing.
+- **Failed clean run.** One fresh clean run (payroll-1, second repeat) withheld its email after the
+  planner miscomputed a check value. Its 22 fault runs stay in the results.
+- **Fault coverage.** Timeouts are not injected in Phase 1. Shared state is corrupted directly only
+  in the separate 16-run experiment, and no agent writes concurrently.
+- **Intervals.** The 95% intervals resample tasks, so they show between-task spread. Model sampling
+  variation is shown by the three samples of the matrix instead.
 - **Scale.** Synthetic tasks, two task seeds, and 22 duplicate placements (154 independent runs).
-  Task seeds 2–3 are held out for Phase 2 evaluation.
+  All results are on the development task seeds; seeds 2–3 are held out for Phase 2 evaluation.
 - **Hosted models.** The proposal planned local CPU models; we used hosted models instead (Claude
-  Haiku, about $0.32; the UCSD campus gateway, about $0.19).
+  Haiku, about $1.05; the UCSD campus gateway, about $0.19).
 
 ## Phase 2 plan
 
@@ -203,7 +246,7 @@ and reporting of irreversible effects, compared with full restart, suffix replay
 on identical fault schedules and budgets. Then recovery after other agents wrote to shared state,
 and richer state restored from the write log or a container snapshot. Add comparison-aware citations
 and re-validation of re-sampled outputs to address fact-level misses. Extend the faults (timeouts,
-source-level injection) and the task suite. The timeline, with a check for each milestone, is in the
+source-level injection, concurrent writers) and the task suite. The timeline, with a check for each milestone, is in the
 report appendix.
 
 ## Use of AI tools
