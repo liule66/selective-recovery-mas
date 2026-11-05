@@ -26,26 +26,31 @@ Claude Haiku 5.5.
 | Clean runs that pass the checker | 8 of 8 (uncached reruns: 32 of 32) |
 | Fault runs that still pass the checker without recovery | 39% |
 | Runs where the fault reached a downstream agent | 82 of 176 |
-| Unauthorized actions after adversarial / accidental faults | 58% / 5% |
+| Unauthorized actions after adversarial / accidental faults | 58% / 5% (32 of the 46 adversarial runs are by construction) |
 | Runs where researcher faults left an incorrect, unrecallable email | 40% |
-| Runs with a wrong KV value that also sent an incorrect email reading it | 27 of 27 |
+| Runs with a wrong KV value that also sent an incorrect email reading it | 27 of 27 (the read is the only visible source in at most 6) |
 
 Dependency tracking, scored on downstream units only, over the 82 runs where the fault propagated:
 
 | Granularity | Precision | Recall | Runs with a miss | Predicted recompute | Records kept |
 |---|---|---|---|---|---|
-| Stage | 0.29 | 1.00 | 0% | 97% | 11 |
-| Message | 0.38 | 1.00 | 0% | 86% | 23 |
-| Fact | 0.97 | 0.88 | 17% | 48% | 77 |
+| Stage | 0.29 | 1.00 | 0% | 97% | 12 |
+| Message | 0.38 | 1.00 | 0% | 86% | 25 |
+| Fact | 0.97 | 0.88 | 17% | 48% | 83 |
+| Fact, 32 planner faults | 1.00 | 1.00 | 0% | 43% | |
+| Fact, 50 researcher faults | 0.96 | 0.80 | 28% | 51% | |
 
-Of the 14 fact-level misses, 6 leave a wrong result (7% of propagated runs); the other 8 only
-change a signature, for example a report that adds a correct number. Fact-level recall is 0.92 on
-accidental and 0.82 on adversarial faults.
+The overall fact-level recall flatters the policy. In all 32 propagating planner faults the affected
+units are just the injected steps' own executors, so any tracker finds them. Every miss is a
+researcher fault: 14 of 50 runs (accidental 16%, adversarial 47%). Six of them leave a wrong result
+(12% of propagating researcher faults, 7% of all propagated runs); the other 8 only change a
+signature, for example a report that adds a correct number.
 
-Baselines: full restart repairs all files, KV entries and payments but leaves incorrect emails in
-23% of runs (27% of accidental, 17% of adversarial faults). Always-verify detects every injected
-fault at an estimated 1.18× a clean run's tokens on fault runs and 1.04× on clean runs; both its
-detection and its repair are optimistic (see Limitations).
+Baselines, replayed: full restart leaves incorrect emails in 23% of runs (27% of accidental, 17% of
+adversarial faults). Its 100% state correctness is by construction, because a replayed restart
+reuses the cached clean responses. Always-verify detects every injected fault at an estimated 1.18×
+a clean run's tokens on fault runs and 1.04× on clean runs; both its detection and its repair are
+optimistic (see Limitations).
 
 Latency: 16 uncached clean Claude runs, one at a time, took a median of 20.9 s (17.6–32.5 s for
 9–14 units). On the live campus model, full restart took 7.5 s and always-verify 17.3 s (medians
@@ -66,8 +71,8 @@ Per-class results, intervals, affected stages and timing are in
 | `src/srmas/analysis/` | Counterfactual comparison and propagation metrics |
 | `src/srmas/baselines/` | Full-restart and always-verify baselines |
 | `src/srmas/llm/` | LLM clients (Claude, UCSD campus gateway, deterministic mock) with a prompt-hash response cache |
-| `experiments/` | `run_phase1.py` (experiment driver), `make_figures.py` (summaries and figures), `merge_legacy_verify.py`, `phase1_analysis.py` (per-class results, intervals, miss review) |
-| `tests/` | 47 offline tests (mock model, no API key needed) |
+| `experiments/` | `run_phase1.py` (experiment driver), `make_figures.py` (summaries and figures), `merge_legacy_verify.py`, `phase1_analysis.py` (per-class results, intervals, miss review), `run_phase1_live.sh` (the live Claude measurements) |
+| `tests/` | 58 offline tests (mock model, no API key needed) |
 | `tasks/` | The 8 Phase 1 task instances as JSON (sources, goal, expected final state) |
 | `results/` | Experiment outputs, described below |
 | `report/phase1/` | Phase 1 report (LaTeX and PDF) |
@@ -81,7 +86,7 @@ Python 3.12 (the committed replay ran on 3.13.13; `tasks.json` records it).
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 python -m pip install -e ".[dev]"
-python -m pytest -q              # 47 tests, no API key needed
+python -m pytest -q              # 58 tests, no API key needed
 ```
 
 `requirements-measurement.txt` pins the exact package versions used for the measurements.
@@ -192,12 +197,14 @@ and summaries are.
 
 ## Phase 2 plan
 
-Build the recovery engine: per-key restore, targeted refunds, partial re-execution from the
-trace, and reporting of irreversible effects. Compare it with full restart, suffix replay and
-always-verify on identical fault schedules and budgets. Add comparison-aware citations and
-re-validation of re-sampled outputs to address fact-level misses. Extend the faults (timeouts,
-direct shared-state corruption, source-level injection) and the task suite. The timeline is in
-the report appendix.
+State restore comes first, as the proposal feedback asked: versioned files and KV with a write log,
+per-key restore and targeted refunds. Then the recovery engine: partial re-execution from the trace
+and reporting of irreversible effects, compared with full restart, suffix replay and always-verify
+on identical fault schedules and budgets. Then recovery after other agents wrote to shared state,
+and richer state restored from the write log or a container snapshot. Add comparison-aware citations
+and re-validation of re-sampled outputs to address fact-level misses. Extend the faults (timeouts,
+source-level injection) and the task suite. The timeline, with a check for each milestone, is in the
+report appendix.
 
 ## Use of AI tools
 
