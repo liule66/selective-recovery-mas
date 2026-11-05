@@ -1,0 +1,55 @@
+Clean baseline: 8/8 runs pass; uncached reruns 16/16.
+
+Mean affected units by injection stage:
+          affected_research  affected_plan  affected_exec
+stage                                                    
+research                1.0           0.57           1.69
+plan                    0.0           1.00           0.75
+exec                    0.0           0.00           1.00
+
+Outcomes by fault class (all runs):
+fault_class           accidental  adversarial
+pass                       0.365        0.412
+state_ok                   0.365        0.475
+unauthorized               0.052        0.575
+wrong_email                0.271        0.175
+propagated                 0.490        0.438
+restart_unauthorized       0.000        0.162
+restart_wrong_email        0.271        0.175
+verify_unauthorized        0.000        0.000
+verify_wrong_email         0.000        0.000
+
+Granularity by fault class (propagated runs, downstream units):
+                     runs  precision  recall  miss_runs  recompute
+fault_class policy                                                
+accidental  stage      47      0.331   1.000      0.000      0.960
+            message    47      0.443   1.000      0.000      0.841
+            fact       47      0.955   0.916      0.106      0.528
+adversarial stage      35      0.240   1.000      0.000      0.974
+            message    35      0.291   1.000      0.000      0.874
+            fact       35      1.000   0.824      0.257      0.413
+
+Shared state: 27 runs store a wrong KV value without recovery; in 27 of them an incorrect email was sent by an executor that read a wrong key.
+
+95% intervals, resampling tasks (between-task spread only, not model sampling):
+  fact recall (propagated): 0.877 [0.818, 0.934]
+  fact miss runs (propagated): 0.171 [0.103, 0.237]
+  fact recompute (propagated): 0.479 [0.441, 0.526]
+  stage recompute (propagated): 0.966 [0.952, 0.977]
+  pass without recovery (all): 0.386 [0.335, 0.443]
+  unauthorized (all): 0.290 [0.256, 0.324]
+
+Fact-level misses: 14 runs of 82 propagated; 6 (7.3%) leave a wrong result, 8 only change a signature (fact_misses.csv).
+cause
+comparative dependency    2
+fabricated entity         3
+re-sampling               1
+
+Live timing, Claude (16 uncached clean reruns, one at a time, s): median 20.9, range 17.6-32.5; 9 units 19.1-20.9, 10 units 17.6-22.7, 11 units 20.7-22.8, 14 units 30.0-32.5
+  pass 16/16; mean units differing from the cached run 0.375
+
+Live timing, campus pilot (no request spacing; procurement-0, 10 units, s):
+  first clean run 16.3; uncached clean repeats [13.3, 6.0]
+  restart median 7.53, always-verify median 17.32 (n=6)
+phase1_triton_validation_serial spaces requests by at least 1.25 s, so its timings mostly reflect that spacing.
+The 176 Claude fault runs are replayed from the cache; replay timings are not latency.

@@ -37,3 +37,4 @@ report/**/*.fdb_latexmk
 # the Claude Phase 1 evidence is small enough to version: traces and the replay cache
 !results/phase1_haiku_revised/traces/
 !results/phase1_haiku_revised/response_cache/
+!results/phase1_haiku_latency/traces/

@@ -11,7 +11,12 @@ replayed with `--verify-repair restore`, the original experiment's repair (the
 pre-injection output is restored and one retry's tokens are estimated), which needs no
 new model calls; `merge_legacy_verify.py` stops unless the replay reproduces the original
 detection, flag and token columns. Only the uncached noise reruns are copied from
-`results/phase1_haiku`. See the README for the commands.
+`results/phase1_haiku`. See the README for the commands. `experiments/phase1_analysis.py`
+derives `analysis.txt` and `fact_misses.csv` from those results and their traces, also without
+model calls; a missed unit counts as a wrong result when its call fails the checker's
+requirements for its target or it was dropped from the faulty run.
+`results/phase1_haiku_latency` holds 16 later live clean reruns, for end-to-end timing and a
+second noise estimate; repeating them needs an API key (see the README).
 
 ## Reproduce without API spending
 

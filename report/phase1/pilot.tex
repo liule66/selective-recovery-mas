@@ -8,8 +8,9 @@ versions are in the repository; raw traces and responses are archived separately
 \para{Live pilot.} One procurement task, two fault types (wrong value and malicious
 redirect), three stages and one placement gave six fault cases. Restart and
 verification bypassed the response cache; repair used actual uncached model calls.
-Median restart and verification times were 7.53\,s and 17.32\,s. These include network
-and local instrumentation; only these baseline timings are live measurements.
+The first clean run took 16.3\,s and the uncached repeats 13.3\,s and 6.0\,s; median restart
+and verification times were 7.53\,s and 17.32\,s. These include network and local
+instrumentation, and are this route's only live timings without request spacing.
 The clean run passed, but only one of two uncached clean repeats passed.
 Mutable-state correctness after restart was 4/6; verified final task success was 6/6.
 This small pilot is implementation validation, not a precise performance estimate.

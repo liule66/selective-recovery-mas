@@ -23,10 +23,12 @@ Claude Haiku 5.5.
 
 | Finding | Number |
 |---|---|
+| Clean runs that pass the checker | 8 of 8 (uncached reruns: 32 of 32) |
 | Fault runs that still pass the checker without recovery | 39% |
 | Runs where the fault reached a downstream agent | 82 of 176 |
 | Unauthorized actions after adversarial / accidental faults | 58% / 5% |
 | Runs where researcher faults left an incorrect, unrecallable email | 40% |
+| Runs with a wrong KV value that also sent an incorrect email reading it | 27 of 27 |
 
 Dependency tracking, scored on downstream units only, over the 82 runs where the fault propagated:
 
@@ -36,9 +38,21 @@ Dependency tracking, scored on downstream units only, over the 82 runs where the
 | Message | 0.38 | 1.00 | 0% | 86% | 23 |
 | Fact | 0.97 | 0.88 | 17% | 48% | 77 |
 
+Of the 14 fact-level misses, 6 leave a wrong result (7% of propagated runs); the other 8 only
+change a signature, for example a report that adds a correct number. Fact-level recall is 0.92 on
+accidental and 0.82 on adversarial faults.
+
 Baselines: full restart repairs all files, KV entries and payments but leaves incorrect emails in
-23% of runs. Always-verify catches every injected fault but costs 1.18× a clean run's tokens on
-every run.
+23% of runs (27% of accidental, 17% of adversarial faults). Always-verify detects every injected
+fault at an estimated 1.18× a clean run's tokens on fault runs and 1.04× on clean runs; both its
+detection and its repair are optimistic (see Limitations).
+
+Latency: 16 uncached clean Claude runs, one at a time, took a median of 20.9 s (17.6–32.5 s for
+9–14 units). On the live campus model, full restart took 7.5 s and always-verify 17.3 s (medians
+of 6 cases).
+
+Per-class results, intervals, affected stages and timing are in
+[results/phase1_haiku_revised/analysis.txt](results/phase1_haiku_revised/analysis.txt).
 
 ## Repository layout
 
@@ -52,8 +66,8 @@ every run.
 | `src/srmas/analysis/` | Counterfactual comparison and propagation metrics |
 | `src/srmas/baselines/` | Full-restart and always-verify baselines |
 | `src/srmas/llm/` | LLM clients (Claude, UCSD campus gateway, deterministic mock) with a prompt-hash response cache |
-| `experiments/` | `run_phase1.py` (experiment driver), `make_figures.py` (summaries and figures), `merge_legacy_verify.py` |
-| `tests/` | 44 offline tests (mock model, no API key needed) |
+| `experiments/` | `run_phase1.py` (experiment driver), `make_figures.py` (summaries and figures), `merge_legacy_verify.py`, `phase1_analysis.py` (per-class results, intervals, miss review) |
+| `tests/` | 47 offline tests (mock model, no API key needed) |
 | `tasks/` | The 8 Phase 1 task instances as JSON (sources, goal, expected final state) |
 | `results/` | Experiment outputs, described below |
 | `report/phase1/` | Phase 1 report (LaTeX and PDF) |
@@ -61,13 +75,13 @@ every run.
 
 ## Setup
 
-Python 3.12.
+Python 3.12 (the committed replay ran on 3.13.13; `tasks.json` records it).
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 python -m pip install -e ".[dev]"
-python -m pytest -q              # 44 tests, no API key needed
+python -m pytest -q              # 47 tests, no API key needed
 ```
 
 `requirements-measurement.txt` pins the exact package versions used for the measurements.
@@ -82,11 +96,13 @@ the API) and regenerates the tables and figures in about a minute:
 python experiments/run_phase1.py --llm haiku --cache-only --cache-dir results/phase1_haiku_revised/response_cache --verify-repair restore --noise-runs 0 --out /tmp/srmas_replay
 python experiments/merge_legacy_verify.py results/phase1_haiku /tmp/srmas_replay
 python experiments/make_figures.py /tmp/srmas_replay
+python experiments/phase1_analysis.py /tmp/srmas_replay
 ```
 
-`/tmp/srmas_replay/runs.csv` and `summary.txt` then match the committed
+`/tmp/srmas_replay/runs.csv`, `summary.txt`, `analysis.txt` and `fact_misses.csv` then match the committed
 `results/phase1_haiku_revised/` files (wall-clock timings aside). Only the 16 uncached noise
 reruns cannot be replayed; `merge_legacy_verify.py` copies them from the original run.
+`phase1_analysis.py` reads the live timings from `results/phase1_haiku_latency/`.
 
 ## Running new experiments
 
@@ -94,6 +110,14 @@ reruns cannot be replayed; `merge_legacy_verify.py` copies them from the origina
 python experiments/run_phase1.py --llm mock --out /tmp/srmas_mock          # offline harness check
 python experiments/run_phase1.py --llm haiku --noise-runs 2 --out /tmp/srmas_haiku   # live Claude API calls
 python experiments/make_figures.py /tmp/srmas_haiku
+```
+
+To repeat the Claude latency measurement (16 live clean reruns, about $0.04), copy the committed
+cache so nothing else calls the API, then:
+
+```bash
+cp -r results/phase1_haiku_revised/response_cache /tmp/srmas_cache
+python experiments/run_phase1.py --llm haiku --cache-dir /tmp/srmas_cache --skip-verify --noise-runs 2 --workers 1 --out /tmp/srmas_latency
 ```
 
 The Claude client reads the key from `ANTHROPIC_API_KEY` or from `api.txt` at the repository root.
@@ -127,7 +151,8 @@ Every output directory must be new. Useful options: `--templates`, `--task-seeds
 
 | Directory | What it is |
 |---|---|
-| `results/phase1_haiku_revised/` | **Primary results.** The 176 Claude runs re-scored with the current checker, plus full traces (`traces/`: every message, tool call, state access and checker outcome, including restart and always-verify runs) and the response cache |
+| `results/phase1_haiku_revised/` | **Primary results.** The 176 Claude runs re-scored with the current checker, plus `analysis.txt`, `fact_misses.csv` (what each fact-level miss left behind), full traces (`traces/`: every message, tool call, state access and checker outcome, including restart and always-verify runs) and the response cache |
+| `results/phase1_haiku_latency/` | 16 later live clean Claude reruns (`tasks.json`, `traces/`): end-to-end timing and a second noise estimate |
 | `results/phase1_haiku/` | The original Claude run, with the original checker and metrics (historical) |
 | `results/phase1_triton_pilot/`, `results/phase1_triton_validation_serial/` | Validation of the revised harness (real verification retries, timing) on the UCSD-hosted `api-glm-5.3-flash` model; report Appendix B |
 | `results/phase1_triton_validation/` | Failure manifest of an aborted campus batch, kept rather than dropped |
@@ -151,12 +176,19 @@ and summaries are.
 - **Injector bug.** A plan-level fabricated step kept the copied step's instruction, so executors
   paid the real payee twice instead of paying the fabricated account.
 - **Counterfactual is approximate.** Changed prompts still re-sample, so the counterfactual is
-  approximate. Claude's resampling noise is 0.38 agents per uncached clean rerun; the campus
+  approximate. Claude's resampling noise is 0.38 agents per uncached clean rerun (in both sets of 16); the campus
   model's is 3.0.
+- **Timing.** The Claude fault runs are replayed from the cache, and replays are not latency.
+  Claude's live timing comes from 16 clean reruns measured on 2026-11-04 from a laptop. Live restart
+  and always-verify timing comes only from the six-case campus pilot; the later campus validation
+  spaces requests by at least 1.25 s, so its timings mostly reflect that spacing.
+- **Fault coverage.** Timeouts and direct shared-state corruption are not injected in Phase 1.
+- **Intervals.** The 95% intervals resample tasks, so they show between-task spread, not model
+  sampling variation.
 - **Scale.** Synthetic tasks, two task seeds, and 22 duplicate placements (154 independent runs).
   Task seeds 2–3 are held out for Phase 2 evaluation.
 - **Hosted models.** The proposal planned local CPU models; we used hosted models instead (Claude
-  Haiku, about $0.30; the UCSD campus gateway, about $0.19).
+  Haiku, about $0.32; the UCSD campus gateway, about $0.19).
 
 ## Phase 2 plan
 

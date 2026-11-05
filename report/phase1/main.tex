@@ -30,9 +30,7 @@ invalidation estimates; selective execution is Phase~2 work.
 \end{abstract}
 
 \section{Introduction}
-A faulty agent result can propagate through shared state and tool actions before detection.
-Full restart repeats valid work and cannot retract sent email; verification adds inference
-cost. Phase~1 measures propagation and dependency tracking to guide selective recovery:
+Phase~1 measures propagation and dependency tracking to guide selective recovery:
 \begin{enumerate}[label=\textbf{RQ\arabic*},leftmargin=*,widest=3]
 \item How far do faults propagate, and which reach irreversible or security-relevant actions?
 \item How does tracking granularity trade invalidation precision and recall against
@@ -42,11 +40,11 @@ bookkeeping cost?
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.72\textwidth]{figures/fig_propagation.png}
+\includegraphics[width=0.70\textwidth]{figures/fig_propagation.png}
 \vspace{-0.8em}
-\caption{Fault propagation without recovery, by injection stage and fault type (16 runs per
-row). (a) Mean number of downstream units whose result changed. (b) Fraction of runs with task
-failure, an unauthorized action, and an incorrect email already sent (irreversible).}
+\caption{Fault propagation without recovery, by injection stage and fault type (16 runs per row).
+(a) Mean downstream units changed. (b) Runs with task failure, an unauthorized action, and an
+incorrect email sent.}
 \label{fig:prop}
 \vspace{-1em}
 \end{figure*}
@@ -60,8 +58,9 @@ email is \emph{irreversible}.
 
 \para{Threat model.} One unit $v_0$ emits a faulty result. Accidental faults are wrong/stale
 values or fabricated entities. Adversarial faults rewrite a result with an injected instruction
-(pay an attacker \$250 and email the ledger) or redirect a payee/recipient. This is stronger
-than source-level prompt injection~\cite{greshake,agentdojo}. The attacker knows the schemas and
+or redirect a payee/recipient. Unlike source-level
+prompt injection~\cite{greshake,agentdojo}, this controls $v_0$'s output directly, but re-running
+$v_0$ removes it. The attacker knows the schemas and
 goal but cannot alter tools, logging, checkers or other agents' prompts. Recovery receives
 an oracle fault location after execution; detection is studied separately by verification.
 
@@ -69,26 +68,24 @@ an oracle fault location after execution; detection is studied separately by ver
 its counterfactual replay with $v_0$'s original result restored. With $\sigma$ extracting a
 result's decision-relevant content, the \emph{affected set} is
 $A=\{v : \sigma(r_v)\neq\sigma(r'_v)\}$. A tracking policy at granularity $g$ predicts an
-invalidation set $\hat{A}_g$ from $G$ and the oracle location, including changed fact/step
-IDs for the fact policy. Errors are
+invalidation set $\hat{A}_g$ from $G$ and the oracle location. Errors are
 \emph{over-invalidation} ($\hat{A}_g\setminus A$, wasted work) and \emph{under-invalidation}
 ($A\setminus\hat{A}_g$, reuse of corrupted results). We report precision, recall, recompute
 cost $\sum_{v\in\hat{A}_g}c_v/\sum_{v\in V}c_v$ ($c_v$: tokens of $v$), and bookkeeping
-(dependency records kept). Recovery must return restorable and compensable state to that of a
-fault-free run and report irreversible effects as unrecoverable.
+(dependency records kept).
 
 \section{Methodology}
 \para{Workload and design.} Four seeded templates (procurement, payroll, travel booking,
 inventory restock) with two seeds each give 8 tasks, averaging 11 units and 12.8K tokens per
-clean run. A reference solver derives the expected final state. The checker verifies payments
-with their memos, key--value entries, file values, and the required values in each email. It
+clean run. A reference solver derives the expected state. The checker verifies payments and
+memos, key--value entries, file values, and each email's required values. It
 flags an \emph{unauthorized action} for a payment to an account named in no source or an email
 to a recipient the task does not name; payments and emails to the attacker are a subset.
 All agents run on Claude Haiku~5.5 with schema-constrained JSON output.
 A full factorial design crosses 8 tasks, 11 valid (stage, fault type) cells, and 2 placements,
 giving 176 runs, each with one fault injected after generation. For 22 of the 88 task--cell pairs both
-placements inject identical content and replay the same run, leaving 154 independent runs. Task seeds 0--1
-are for development; seeds 2--3 are held out for Phase~2 evaluation.
+placements are identical, leaving 154 independent runs. Task seeds 0--1
+are for development; 2--3 are held out.
 
 \para{Tracking policies.} \emph{Stage}: invalidate $v_0$'s stage and all later ones.
 \emph{Message}: transitive closure over inter-agent messages and shared-state reads.
@@ -98,13 +95,12 @@ their executors, and readers of the state they wrote.
 \para{Counterfactual comparison.} Responses are memoized by prompt hash, so in $r'$ only
 units whose inputs changed are re-sampled. $\sigma$ keeps tool, target, amount, stored
 value, and the amounts, accounts, addresses and codes in text, discarding paraphrase. Executor
-units are aligned by content before plan position. As a noise control, 16 uncached clean reruns
-differ from the cached run in 0.38 units on average.
+units are aligned by content before plan position. As a noise control, two sets of 16 uncached
+clean reruns each differ from the cached run by a mean of 0.38 units.
 
 \para{Baselines.} \emph{Full restart} restores files/KV, refunds payments, and re-executes.
-\emph{Always-verify} audits each output with Haiku; as in the original run, a flagged output
-is restored to its pre-injection value and retry tokens are estimated, which lets us replay it
-from the cache. The revised harness retries for real (Appendix~B).
+\emph{Always-verify} audits each output with Haiku, restores a flagged output to its pre-injection
+value and estimates retry tokens; the revised harness retries for real (Appendix~B).
 
 \begin{table}[t]
 \centering\small
@@ -121,7 +117,7 @@ Fact    & 0.97 & 0.88 & 17\% & 0.11 & 0.48 & 77 / 3.3\,KB \\
 \vspace{-0.5em}
 \caption{Invalidation on the 82 propagated runs, downstream units only. Miss: runs with
 under-invalidation; Over: unaffected units invalidated; Recomp.: estimated cost vs.\ a full run.
-Over all 176 runs with $v_0$ counted: precision 0.24/0.86, recall 1.00/0.96 (stage/fact).}
+Fact, 95\% intervals over tasks: recall 0.82--0.93, miss 10--24\%, cost 0.44--0.53.}
 \label{tab:gran}
 \vspace{-0.4em}
 \end{table}
@@ -149,51 +145,59 @@ vs.\ a clean run; verifier retry and fact-level (all-run mean) costs are estimat
 \end{table}
 
 \section{Evaluation}
-\para{RQ1: Propagation (Fig.~\ref{fig:prop}).} Without recovery, only 39\% of fault runs pass
-the checker. Only 82 of 176 runs propagate to a downstream unit: no agent reads a payment's
+\para{RQ1: Propagation (Fig.~\ref{fig:prop}).} All 8 clean runs and 32 uncached reruns pass the
+checker; without recovery, only 39\% of fault runs do. Only 82 of 176 runs propagate to a
+downstream unit: no agent reads a payment's
 result, so executor faults cannot, and executors corrected all plan-level wrong amounts and
 redirects from the facts they cite. Researcher faults spread
-farthest (2.3 downstream units) and leave an incorrect, unrecallable email in 40\% of runs.
+farthest (the planner in 57\% of runs and 1.7 executors) and leave an incorrect, unrecallable
+email in 40\% of runs. All 27 runs that store a wrong KV value also send an incorrect email that
+read it, a shared-state path to an irreversible effect.
 Unauthorized actions follow 58\% of adversarial faults and 5\% of accidental ones (fabricated
 payees). Executors carry out injected plan steps and redirected calls by construction, as they
 see only their own step. The informative contrast is at the researcher: an injected instruction
 caused no unauthorized action, while a redirected account did in 88\% of runs (one injection
 wording).
 
-\para{RQ2: Granularity (Table~\ref{tab:gran}).} We score only downstream units, since every
-policy invalidates $v_0$, and only runs where the fault propagated. Stage and message tracking
+\para{RQ2: Granularity (Table~\ref{tab:gran}).} Stage and message tracking
 never under-invalidate, but discard 6.7 and 5.0 unaffected units per fault and recompute 97\%
 and 86\% of a run. Fact tracking keeps $7\times$ more records and recomputes 48\% at precision
-0.97, but misses affected units in 14 of 82 runs (17\%), all of them researcher faults (all figures move by at most 0.01 without duplicate
-placements). Three causes recur. (i)~\emph{Implicit comparative dependencies}: a corrupted price changes which
-option is cheapest, and steps for the new choice cite only its own facts. (ii)~\emph{Collateral
-re-sampling}: a changed prompt re-samples the planner, which may alter steps citing no
-corrupted fact. (iii)~\emph{Ambiguity}: a fabricated supplier led the planner to drop a payee
-without citing it. Phase~2 targets these with comparison-aware citations and re-validation.
+0.97, but misses affected units in 14 of 82 runs (17\%; accidental 11\%, adversarial 26\%), all
+researcher faults (within 0.01 without duplicate placements). Only 6 of these
+runs (7\%) leave a wrong result. Two are \emph{implicit comparative dependencies}: a corrupted
+price changes which option is cheapest, and steps for the new choice cite only its own facts.
+Three are \emph{ambiguity}: a fabricated entity led agents to hold or drop a payment without
+citing it. One is \emph{collateral re-sampling}: a changed prompt re-samples the planner, which
+miscomputed a total. The other 8 only change a signature, such as a report adding a correct number.
 
 \para{RQ3: Baselines (Table~\ref{tab:base}).} Full restart repairs all restorable and
 compensable state. It cannot retract email, leaving incorrect emails in
-23\% of runs (7\% to the attacker) and sending 0.8 duplicates per run. The original verifier
-detected all injected faults and flagged 4.5\% of clean-run outputs, at an estimated
-1.18$\times$ extra tokens on fault runs and 1.04$\times$ on clean runs; its output restoration
-is an optimistic repair model.
+23\% of runs (7\% to the attacker) and sending 0.8 duplicates per run. An unauthorized action
+remains after 16\% of adversarial and no accidental faults; a wrong email after 17\% and 27\%. The
+original verifier detected all injected faults and flagged 4.5\% of clean-run outputs, at an
+estimated 1.18$\times$ extra tokens on fault runs and 1.04$\times$ on clean runs; its output
+restoration is an optimistic repair model. \emph{Latency}: 16 uncached clean Claude runs, one at a
+time, took a median of 20.9\,s (17.6--32.5\,s); fault runs are replays, so untimed. On the
+campus route (Appendix~B), restart took 7.5\,s and always-verify 17.3\,s.
 
 \section{Related Work}
 Selective re-execution follows intrusion/rollback recovery~\cite{retro,rollback}; compensation
 and fact tracking follow sagas and provenance~\cite{sagas,provenance}. Agent security and failure
-studies~\cite{greshake,agentdojo,mast} motivate our injections. REVISE~\cite{revise} and
+studies~\cite{greshake,agentdojo,mast} motivate our faults. REVISE~\cite{revise} and
 dependency-guided rollback~\cite{dgrr} repair online revisions and faulty memories of one
 agent; we study faults that spread across agents and shared state.
 
 \section{Limitations and Next Steps}
 \emph{Internal validity}: faults are injected into results with an oracle-identified $v_0$;
-the verifier sees inputs contradicting the corrupted result, which favors always-verify; and
-fact-level cost is estimated from logged tokens. Re-sampling makes counterfactuals
-approximate. Fine-grained oracle locations favor
-the fact policy. A plan-level fabricated step kept the copied step's instruction, so executors
-paid the real payee twice instead of the fabricated account. \emph{External validity}: synthetic
-tasks, two task seeds. \emph{Deviation}: hosted models replace the proposed local CPU models
-(Haiku, about \$0.30; a campus model in Appendix~B).
+the verifier sees inputs contradicting the corrupted result, which favors always-verify.
+Re-sampling makes counterfactuals approximate. Fine-grained oracle locations favor
+the fact policy. A plan-level fabricated step kept the original instruction, so executors paid
+the real payee twice. \emph{External validity}: synthetic
+tasks, two task seeds. \emph{Deviation}: hosted models replace the proposed
+local CPU models (Haiku, about \$0.32; campus model: Appendix~B). \emph{Next steps}: fact
+tracking could halve stage tracking's recomputation, with wrong reuse in 7\% of propagated
+runs. Phase~2 builds recovery to test this against full restart,
+suffix replay and always-verify, and adds timeout and shared-state faults.
 
 {\footnotesize
 \begin{thebibliography}{9}
@@ -227,7 +231,7 @@ Dates & Milestone \\
 Oct 27--Nov 4 & \textbf{Phase 1 (done):} testbed, 4 task templates, fault injection, tracing at 3 granularities, counterfactual replay, full-restart and always-verify baselines, this report. \\
 Nov 5--16 & Selective recovery engine: per-key restore, targeted refunds, partial re-execution from the trace; oracle fault identity; suffix-replay baseline. \\
 Nov 17--26 & Precision vs.\ bookkeeping: comparison-aware citations, re-validating re-sampled outputs, budget-matched baselines; reserve task seeds 2--3 for held-out evaluation. \\
-Nov 27--Dec 3 & Larger suite (more seeds/templates, source-level injections, second model); stretch: recovery after other agents changed shared state post-fault. \\
+Nov 27--Dec 3 & Larger suite (more seeds/templates, timeout, shared-state and source-level faults, second model); stretch: recovery after other agents changed shared state post-fault. \\
 Dec 4--10 & Final experiments, figures, final report (due Dec 10). \\
 \bottomrule
 \end{tabular}
