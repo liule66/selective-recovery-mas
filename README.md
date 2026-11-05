@@ -25,23 +25,28 @@ from the first sample unless a range is given.
 | Finding | Number |
 |---|---|
 | Clean runs that pass the current checker | 39 of 40, across samples and uncached reruns (16 earlier reruns passed the looser original checker; their traces were not kept) |
-| Fault runs that still pass the checker without recovery | 39% (36–39%) |
+| Fault runs that still pass the checker without recovery | 39% (36–39%; 24–26% without plan-level wrong amounts and redirects, which are weak tests) |
 | Runs where the fault reached a downstream agent | 82 of 176 (82–84) |
 | Cases with the same pass / propagation / unauthorized outcome in all three samples | 94% / 92% / 95% |
-| Unauthorized actions after adversarial / accidental faults | 58% / 5–14% (32 of the 46 adversarial runs are by construction) |
+| Unauthorized actions after adversarial / accidental faults | 58% / 5–14% (16 of the 46 adversarial runs are by construction) |
 | Runs where researcher faults left an incorrect, unrecallable email | 40% |
 | Runs with a wrong KV value that also sent an incorrect email reading it | 27 of 27 (the read is the only visible source in at most 6) |
-| Stored KV value corrupted directly (plan and cited facts stay correct): emails that sent it | 12 of 16 (2 more flagged the mismatch, 2 kept the plan's value) |
+| Stored KV value corrupted directly (the fault leaves the plan and cited facts unchanged): emails that sent it | 12 of 16 (2 more flagged the mismatch, 2 kept the plan's value) |
 
 Dependency tracking, scored on downstream units only, over the 82 runs where the fault propagated:
 
 | Granularity | Precision | Recall | Runs with a miss | Predicted recompute | Records kept |
 |---|---|---|---|---|---|
 | Stage | 0.29 | 1.00 | 0% | 97% | 12 |
-| Message | 0.38 | 1.00 | 0% | 86% | 25 |
+| Message | 0.38 | 1.00 | 0% | 85% | 24 |
 | Fact | 0.97 | 0.88 | 17% | 48% | 83 |
 | Fact, 32 planner faults | 1.00 | 1.00 | 0% | 43% | |
 | Fact, 50 researcher faults | 0.96 | 0.80 | 28% | 51% | |
+| Fact, told only the faulty unit | 0.47 | 0.98 | 4% | 78% | |
+
+The Fact rows above it read which facts or plan steps inside the faulty unit were corrupted, a finer
+oracle than the unit's identity. Told only the unit, the policy loses most of its precision and saves
+about a fifth of stage tracking's recomputation rather than half.
 
 Over the three samples, fact-level recall is 0.88–0.89, runs with a miss 14–17% and predicted
 recompute 48–49%.
@@ -49,11 +54,11 @@ recompute 48–49%.
 The overall fact-level recall flatters the policy. In all 32 propagating planner faults the affected
 units are just the injected steps' own executors, so any tracker finds them. Every miss is a
 researcher fault: 14 of 50 runs (accidental 16%, adversarial 47%). Six of them leave a wrong result
-(12% of propagating researcher faults, 4–12% across samples, 7% of all propagated runs); the other 8
-only change a signature, for example a report that adds a correct number.
+(12% of propagating researcher faults, 4–12% across samples, 7% of all propagated runs); in the other
+8 no missed executor's call is wrong.
 
 Baselines, replayed over the 176 runs: full restart leaves incorrect emails in 23% of runs (27% of
-accidental, 17% of adversarial faults). State correctness is 100% by construction for both baselines,
+accidental, 18% of adversarial faults). State correctness is 100% by construction for both baselines,
 because a replayed restart reuses the cached clean responses and the verifier restores the
 pre-injection output.
 
@@ -85,8 +90,8 @@ Per-class results, intervals, affected stages and timing are in
 | `src/srmas/analysis/` | Counterfactual comparison and propagation metrics |
 | `src/srmas/baselines/` | Full-restart and always-verify baselines |
 | `src/srmas/llm/` | LLM clients (Claude, UCSD campus gateway, deterministic mock) with a prompt-hash response cache |
-| `experiments/` | `run_phase1.py` (experiment driver), `make_figures.py` (summaries and figures), `merge_legacy_verify.py`, `phase1_analysis.py` (per-class results, intervals, miss review), `run_phase1_live.sh` (the live Claude measurements) |
-| `tests/` | 58 offline tests (mock model, no API key needed) |
+| `experiments/` | `run_phase1.py` (experiment driver), `make_figures.py` (summaries and figures), `merge_legacy_verify.py`, `phase1_analysis.py` (per-class results, intervals, miss review), `run_phase1_live.sh` (the live Claude measurements), `import_live_results.py` (copies them into `results/`) |
+| `tests/` | 69 offline tests (mock model, no API key needed) |
 | `tasks/` | The 8 Phase 1 task instances as JSON (sources, goal, expected final state) |
 | `results/` | Experiment outputs, described below |
 | `report/phase1/` | Phase 1 report (LaTeX and PDF) |
@@ -100,10 +105,12 @@ Python 3.12 (the committed replay ran on 3.13.13; `tasks.json` records it).
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 python -m pip install -e ".[dev]"
-python -m pytest -q              # 58 tests, no API key needed
+python -m pytest -q              # 69 tests, no API key needed
 ```
 
-`requirements-measurement.txt` pins the exact package versions used for the measurements.
+`requirements-measurement.txt` pins the exact package versions used for the Claude measurements; the
+install above takes current versions, which replayed to the same results when we checked. The campus
+runs used the versions in their own `tasks.json`.
 
 ## Reproduce the Phase 1 numbers (no API key, no cost)
 
@@ -134,7 +141,7 @@ cp results/phase1_haiku_shared_state/response_cache/* /tmp/srmas_state_cache/
 python experiments/run_phase1.py --llm haiku --cache-only --cache-dir /tmp/srmas_state_cache --shared-state --skip-verify --out /tmp/srmas_state
 ```
 
-Their `runs.csv` then match the committed files, wall-clock timings aside. The live baselines bypass
+Their `runs.csv` then match the committed files, wall-clock timings and cache-hit counts aside. The live baselines bypass
 the cache by design, so they cannot be replayed.
 
 ## Running new experiments
@@ -179,8 +186,8 @@ Every output directory must be new. Useful options: `--templates`, `--task-seeds
 - **Tracking.** *Stage* invalidates the faulty stage and everything after it. *Message* takes
   the closure over agent messages and shared-state reads. *Fact* follows corrupted facts to the
   plan steps that cite them, their executors, and the readers of what those executors wrote.
-- **Ground truth.** Responses are cached by prompt hash, so replaying a task with the fault
-  removed re-samples only the agents whose input changed. An agent counts as affected if its
+- **Ground truth.** Responses are cached by prompt hash, so a faulty run re-samples only the agents
+  whose input changed, and the clean run is its fault-free counterfactual. An agent counts as affected if its
   decision-relevant output (tool, target, amount, stored value, or the amounts, accounts and
   addresses in its text) differs.
 - **Checker.** The checker compares the final state with the reference solution: payments and
@@ -197,7 +204,7 @@ Every output directory must be new. Useful options: `--templates`, `--task-seeds
 | `results/phase1_haiku_repeat1/`, `results/phase1_haiku_repeat2/` | Two independent samples of the 176-run matrix with fresh response caches (no always-verify; restart traces, which replay the clean run, are not kept) |
 | `results/phase1_haiku_live/` | Uncached full restart and always-verify with a real retry on 44 cases, four tasks at a time |
 | `results/phase1_haiku_shared_state/` | 16 runs that corrupt a stored KV value directly; its cache holds only the responses new to this experiment |
-| `results/phase1_haiku/` | The original Claude run, with the original checker and metrics (historical) |
+| `results/phase1_haiku/` | The first committed Claude run, with the original checker and metrics (historical). Only its 16 noise reruns were live; its other responses came from an earlier run on the same cache, whose logs are not kept |
 | `results/phase1_triton_pilot/`, `results/phase1_triton_validation_serial/` | Validation of the revised harness (real verification retries, timing) on the UCSD-hosted `api-glm-5.3-flash` model; report Appendix B |
 | `results/phase1_triton_validation/` | Failure manifest of an aborted campus batch, kept rather than dropped |
 | `results/phase1_triton_cost_summary.json` | Campus API usage: about $0.19 of a $5 cap |
@@ -208,13 +215,25 @@ In each directory, `runs.csv` has one row per fault run: the fault (`stage`, `ft
 (`downstream_affected`, `kv_corrupted`, `emails_changed`, ...), per-granularity invalidation scores
 (`{stage,message,fact}_*`, with `_ds_` for downstream-only), and baseline outcomes (`restart_*`,
 `verify_*`). `tasks.json` records the configuration, code revision, package versions, clean runs
-and any failures. Raw traces of the campus runs are not in the repository; their per-run results
+and any failures, except that `phase1_haiku_latency` has no `runs.csv` and `phase1_haiku` and
+`phase1_mock` predate the configuration, revision and package fields. In directories imported from a
+live run, the `imported` field lists the paths rewritten on import (`experiments/import_live_results.py`).
+Raw traces of the campus runs are not in the repository; their per-run results
 and summaries are.
 
 ## Limitations and deviations
 
 - **Fault injection.** Faults are injected into agent results with an oracle-identified faulty
   unit. Source-level injection and fault detection are Phase 2 work.
+- **Oracle.** The fact policy also reads which facts or plan steps inside the unit were corrupted;
+  `analysis.txt` gives its scores without that. Its recompute estimate assumes executors keep their
+  results when the plan is re-run; if they cannot, researcher faults cost 0.71 rather than 0.51.
+- **Weak cells.** Plan-level wrong amounts and redirects change one field and leave the step's text,
+  which still stated the correct value in 84 of the 94 runs that did not propagate. Matrix executor
+  faults hit only payments, which no later agent reads in those runs, so they never propagate.
+- **Evidence limits.** No API request IDs are stored, so the traces show internal consistency, not
+  that calls reached the provider. Where runs executed is the authors' statement; costs are stored
+  tokens at list prices. The first sample's responses were recorded before the first committed run.
 - **Verifier.** The verifier sees inputs that contradict the corrupted result, which favors
   always-verify. Over the 176 runs its repair restores the pre-injection output (optimistic); only
   the 44 live cases use a real retry.
@@ -243,7 +262,7 @@ and summaries are.
 
 ## Phase 2 plan
 
-State restore comes first, as the proposal feedback asked: versioned files and KV with a write log,
+The proposal feedback asked for time for state restore, so it comes first: versioned files and KV with a write log,
 per-key restore and targeted refunds. Then the recovery engine: partial re-execution from the trace
 and reporting of irreversible effects, compared with full restart, suffix replay and always-verify
 on identical fault schedules and budgets. Then recovery after other agents wrote to shared state,

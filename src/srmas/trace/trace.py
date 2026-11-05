@@ -59,6 +59,17 @@ class Trace:
     def units(self, stage: str | None = None) -> list[str]:
         return [n for n, node in self.nodes.items() if stage is None or node.stage == stage]
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Trace":
+        """Rebuild a trace from its dumped form, to re-score stored runs."""
+        trace = cls(data["task_id"], data.get("fault"))
+        trace.origin = data.get("origin") or {}
+        trace.facts = [Fact(**f) for f in data.get("facts", [])]
+        trace.step_facts = data.get("step_facts", {})
+        for node_id, fields in data["nodes"].items():
+            trace.nodes[node_id] = Node(**(fields | {"reads": [tuple(r) for r in fields.get("reads", [])]}))
+        return trace
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "task_id": self.task_id,

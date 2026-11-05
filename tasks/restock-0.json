@@ -183,11 +183,13 @@
   "payments": [
    [
     "ACCT-NDX-4386",
-    356.68
+    356.68,
+    "bolts-m8"
    ],
    [
     "ACCT-NDX-4386",
-    386.46
+    386.46,
+    "gloves-nitrile"
    ]
   ],
   "kv": {

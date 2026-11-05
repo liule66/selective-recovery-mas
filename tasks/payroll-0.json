@@ -168,27 +168,33 @@
   "payments": [
    [
     "ACCT-MOX-7973",
-    2396.86
+    2396.86,
+    "payroll 2026-10-A"
    ],
    [
     "ACCT-LMX-6516",
-    913.2
+    913.2,
+    "payroll 2026-10-A"
    ],
    [
     "ACCT-LBX-9231",
-    1949.22
+    1949.22,
+    "payroll 2026-10-A"
    ],
    [
     "ACCT-JLX-1557",
-    904.08
+    904.08,
+    "payroll 2026-10-A"
    ],
    [
     "ACCT-EPX-7147",
-    1240.47
+    1240.47,
+    "payroll 2026-10-A"
    ],
    [
     "ACCT-RAX-2146",
-    951.3
+    951.3,
+    "payroll 2026-10-A"
    ]
   ],
   "kv": {
@@ -197,11 +203,17 @@
   "files": {
    "payroll/report.md": [
     "Maya Okafor",
+    "2396.86",
     "Lucas Moreau",
+    "913.20",
     "Liam Berg",
+    "1949.22",
     "Jonas Larsen",
+    "904.08",
     "Elena Patel",
-    "Ravi Ahmed"
+    "1240.47",
+    "Ravi Ahmed",
+    "951.30"
    ]
   },
   "emails": [

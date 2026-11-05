@@ -168,27 +168,33 @@
   "payments": [
    [
     "ACCT-KLX-5952",
-    1369.6
+    1369.6,
+    "payroll 2026-10-A"
    ],
    [
     "ACCT-MCX-8093",
-    1151.26
+    1151.26,
+    "payroll 2026-10-A"
    ],
    [
     "ACCT-ECX-3334",
-    1414.74
+    1414.74,
+    "payroll 2026-10-A"
    ],
    [
     "ACCT-MCX-2291",
-    1957.62
+    1957.62,
+    "payroll 2026-10-A"
    ],
    [
     "ACCT-DCX-7164",
-    2198.79
+    2198.79,
+    "payroll 2026-10-A"
    ],
    [
     "ACCT-KWX-1569",
-    1928.5
+    1928.5,
+    "payroll 2026-10-A"
    ]
   ],
   "kv": {
@@ -197,11 +203,17 @@
   "files": {
    "payroll/report.md": [
     "Kofi Larsen",
+    "1369.60",
     "Maya Costa",
+    "1151.26",
     "Elena Chen",
+    "1414.74",
     "Maya Chen",
+    "1957.62",
     "Diego Chen",
-    "Kofi Weber"
+    "2198.79",
+    "Kofi Weber",
+    "1928.50"
    ]
   },
   "emails": [

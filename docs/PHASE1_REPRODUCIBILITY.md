@@ -21,6 +21,8 @@ second noise estimate; repeating them needs an API key (see the README).
 (independent samples of the matrix), `results/phase1_haiku_shared_state` (stored values corrupted
 directly) and `results/phase1_haiku_live` (uncached restart and verification on 44 cases). Each
 `tasks.json` records its code revision and a note on what is live and what is replayed.
+`experiments/import_live_results.py` copied them in: it rewrites the temporary output and cache paths,
+adds that note, and lists both in the file's `imported` field. It changes no measured value.
 
 ## Reproduce without API spending
 
@@ -28,13 +30,14 @@ Use Python 3.12 in an isolated environment and install `.[dev]`. Run:
 
 ```sh
 python -m pytest -q
-python experiments/run_phase1.py --llm mock --workers 1 --noise-runs 2 --live-baselines --out results/my_mock_run
-python experiments/make_figures.py results/my_mock_run
+python experiments/run_phase1.py --llm mock --workers 1 --noise-runs 2 --live-baselines --out /tmp/srmas_mock_run
+python experiments/make_figures.py /tmp/srmas_mock_run
 ```
 
 Mock results check the harness and oracle-based fixtures. They are not evidence of
 a real model's capabilities, attack resistance, latency, or recovery quality.
-Every output directory must be new. `tasks.json` records the command options,
+Every output directory must be new, and outside the repository, or `tasks.json` records a dirty tree.
+`tasks.json` records the command options,
 model identity, versions, code revision, dirty state, expected case count and failures.
 Interrupted tasks retain completed case records in `traces/*/completed.jsonl`.
 A nonzero experiment exit status or a nonempty failures list means incomplete data.

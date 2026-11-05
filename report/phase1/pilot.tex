@@ -2,8 +2,10 @@
 \para{Setup.} On October 29 we tested the revised harness on the UCSD-hosted
 \texttt{api-glm-5.3-flash} route through TritonAPI, with strict JSON output.
 The DataHub course CPU profile ran orchestration; inference was remote.
-The route is not an immutable checkpoint. Per-case results, configurations and package
-versions are in the repository; raw traces and responses are archived separately.
+The route is not an immutable checkpoint. These runs used revision \texttt{0af50e5} with uncommitted
+changes and the checker before it was tightened on October 31, so they are not comparable with the
+body and cannot be re-scored here. Per-case results, configurations and package versions are in the
+repository; raw traces and responses are not.
 
 \para{Live pilot.} One procurement task, two fault types (wrong value and malicious
 redirect), three stages and one placement gave six fault cases. Restart and
@@ -37,8 +39,8 @@ Detection therefore does not guarantee correct repair. Restock inability is not
 counted as attack resistance. Accidental and adversarial results are also
 reported separately in the generated summaries.
 
-\para{Controls and failures.} This second validation used cached replay and a
-1.25\,s minimum spacing for live requests. Its timings are not comparable to the
+\para{Controls and failures.} This second validation used cached replay, for restart too (only
+verification's retries were live), and a 1.25\,s minimum spacing for live requests. Its timings are not comparable to the
 live pilot as serving-performance measurements. A preceding four-worker batch
 failed on four requests before completing any fault case; its manifest and
 partial traces are retained, and it is excluded from success-rate denominators.

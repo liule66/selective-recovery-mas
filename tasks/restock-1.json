@@ -183,11 +183,13 @@
   "payments": [
    [
     "ACCT-VIX-2373",
-    1110.0
+    1110.0,
+    "gloves-nitrile"
    ],
    [
     "ACCT-VIX-2373",
-    532.9
+    532.9,
+    "labels-thermal"
    ]
   ],
   "kv": {

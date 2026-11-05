@@ -19,19 +19,19 @@
 \begin{abstract}
 \noindent When one agent in a multi-agent workflow emits a faulty result, restarting the workflow
 repeats correct work and cannot undo irreversible side effects. We study whether dependency tracking can confine recovery to the work a fault actually affected.
-We inject 176 faults, in three independent samples, and compare each run with its counterfactual replay. Where the fault
-reached downstream agents (82 runs), fact-level provenance finds 88\% of the affected downstream
-units with 97\% precision at an estimated 48\% of full-run token cost; on researcher faults
-(50 runs), where dependencies are not obvious, it finds 80\% and misses some in 28\% of runs. Stage
-tracking finds all of them but recomputes 97\%, with $7\times$ fewer dependency records. These
+We inject 176 faults in each of three independent samples and compare each faulty run with the
+fault-free run. Where the fault reached downstream agents (82 runs in the first sample), fact-level
+provenance has mean recall 0.88 and precision 0.97 at an estimated 48\%
+of full-run token cost, but only when told which facts or plan steps inside the faulty unit were
+corrupted. Told only the unit, its precision falls to 0.47 and its cost rises to 78\%. Stage tracking
+has recall 1.00 by construction and recomputes 97\%, with $7\times$ fewer dependency records. These
 are invalidation estimates; selective execution is Phase~2 work.
 \end{abstract}
 
 \section{Introduction}
-Phase~1 measures propagation and dependency tracking to guide selective recovery. \textbf{RQ1}:
-how far do faults propagate, and which reach irreversible or security-relevant actions?
-\textbf{RQ2}: how does tracking granularity trade precision and recall against bookkeeping?
-\textbf{RQ3}: what do full restart and always-verify achieve, at what cost?
+Phase~1 asks: \textbf{RQ1}: how far do faults propagate, and which reach irreversible or
+security-relevant actions? \textbf{RQ2}: how does tracking granularity trade precision and recall
+against bookkeeping? \textbf{RQ3}: what do full restart and always-verify achieve, at what cost?
 
 \begin{figure*}[t]
 \centering
@@ -52,9 +52,8 @@ email is \emph{irreversible}.
 values or fabricated entities. Adversarial faults rewrite a result with an injected instruction
 or redirect a payee/recipient. Unlike source-level
 prompt injection~\cite{greshake,agentdojo}, this controls $v_0$'s output directly, but re-running
-$v_0$ removes it. The attacker cannot alter tools, logging, checkers or other prompts.
-Recovery receives
-an oracle fault location after execution; detection is studied separately by verification.
+$v_0$ removes it. An oracle reports the fault location after execution: the unit $v_0$ and, for the fact policy, the
+corrupted facts or plan steps inside it. Detection is studied separately by verification.
 
 \para{Problem statement.} Let $G=(V,E)$ be the provenance graph of a faulty run $r$, and $r'$
 its counterfactual replay with $v_0$'s original result restored. With $\sigma$ extracting a
@@ -72,8 +71,7 @@ compares payments and memos, KV entries, file values and each email's required v
 reference solver's state. It flags an \emph{unauthorized action} for a payment to an account
 named in no source or an email to a recipient the task does not name. All agents run on Claude
 Haiku~5.5 with schema-constrained JSON. Crossing 8 tasks, 11 valid (stage, fault type) cells and
-2 injection placements gives 176 runs, each with one fault injected after generation; in 22 of
-88 task--cell pairs both placements coincide, leaving 154 distinct cases. All results use
+2 injection placements gives 176 runs, each with one fault injected after generation. All results use
 development seeds 0--1; seeds 2--3 are held out.
 
 \para{Tracking policies.} \emph{Stage}: invalidate $v_0$'s stage and all later ones.
@@ -81,12 +79,11 @@ development seeds 0--1; seeds 2--3 are held out.
 \emph{Fact}: closure from corrupted facts to plan steps citing them (declared or value-matched),
 their executors, and readers of the state they wrote.
 
-\para{Counterfactual comparison.} Responses are memoized by prompt hash, so in $r'$ only
-units whose inputs changed are re-sampled. $\sigma$ keeps tool, target, amount, stored
-value, and the amounts, accounts, addresses and codes in text. As a noise
-control, two sets of 16 uncached clean reruns each differ from the cached run by a mean of 0.38
-units. We sampled the whole matrix three times with no shared responses; numbers are from the
-first sample unless a range is given.
+\para{Counterfactual comparison.} Responses are memoized by prompt hash, so $r'$ is the clean run
+and in $r$ only units whose inputs changed are re-sampled. $\sigma$ keeps tool, target, amount,
+stored value, and the amounts, accounts, addresses and codes in text. As a noise control, two sets of
+16 uncached clean reruns each differ from the cached run by a mean of 0.38 units. We sampled the whole
+matrix three times with no shared responses; numbers are from the first sample unless marked.
 
 \para{Baselines.} \emph{Full restart} restores files/KV, refunds payments, and re-executes.
 \emph{Always-verify} audits each output with Haiku and repairs a flagged one. Both are replayed over
@@ -101,16 +98,17 @@ placement, four tasks at a time) from a laptop.
 Policy (runs) & Prec. & Rec. & Miss & Over & Recomp. & Records \\
 \midrule
 Stage (82)   & 0.29 & 1.00 & 0\%  & 6.7  & 0.97 & 12 / 0.3\,KB \\
-Message (82) & 0.38 & 1.00 & 0\%  & 5.0  & 0.86 & 25 / 0.4\,KB \\
+Message (82) & 0.38 & 1.00 & 0\%  & 5.0  & 0.85 & 24 / 0.4\,KB \\
 Fact (82)    & 0.97 & 0.88 & 17\% & 0.11 & 0.48 & 83 / 3.6\,KB \\
 \midrule
 Fact: researcher (50) & 0.96 & 0.80 & 28\% & 0.18 & 0.51 & \\
+Fact: told only $v_0$ (82) & 0.47 & 0.98 & 4\% & 3.7 & 0.78 & \\
 \bottomrule
 \end{tabular}
 \caption{Propagated runs, downstream units. Miss: runs with under-invalidation; Over: unaffected
-units invalidated; Recomp.: estimated cost vs.\ a full run. Fact over 3 samples: recall
-0.88--0.89, miss 14--17\%, cost 0.48--0.49 (researcher: 0.80--0.82, 24--28\%). First sample, 95\%
-over tasks: 0.82--0.93, 10--24\%, 0.44--0.53.}
+units invalidated; Recomp.: estimated cost vs.\ a full run. Fact rows use the sub-unit oracle unless
+told only $v_0$. Fact over 3 samples: recall 0.88--0.89, miss 14--17\%, cost 0.48--0.49 (researcher:
+0.80--0.82, 24--28\%).}
 \label{tab:gran}
 \vspace{-0.4em}
 \end{table}
@@ -125,76 +123,76 @@ over tasks: 0.82--0.93, 10--24\%, 0.44--0.53.}
 \midrule
 No recovery       & 41\%   & 29\% & 23\% & 0            & -- \\
 Full restart      & 100\%* & 7\%  & 23\% & 1.00$\times$ & -- \\
-Verify + restore  & 100\%* & 0\%  & 0\%  & 1.18$\times$ & -- \\
+Verify + restore  & 100\%* & 0\%* & 0\%* & 1.18$\times$ & -- \\
 Fact-level (est.) & --     & --   & --   & 0.34$\times$ & -- \\
 \midrule
 Full restart      & 100\%  & 9\%  & 25\% & 0.99$\times$ & 19.0\,s \\
 Verify + retry    & 98\%   & 0\%  & 0\%  & 1.16$\times$ & 40.1\,s \\
 \bottomrule
 \end{tabular}
-\caption{Baselines: 176 replayed runs (top), 44 live cases (bottom). *By construction (RQ3). State
-excludes email. Tokens vs.\ a clean run; verify + restore and fact-level (all-run mean) are estimates.}
+\caption{Baselines: 176 replayed runs (top); 44 live repairs of replayed fault runs (bottom).
+*By construction (RQ3). State excludes email. Tokens
+vs.\ a clean run; verify + restore and fact-level (all-run mean) are estimates.}
 \label{tab:base}
 \vspace{-1.2em}
 \end{table}
 
 \section{Evaluation}
-\para{RQ1: Propagation (Fig.~\ref{fig:prop}).} Of 40 clean runs, 39 pass the checker; without recovery, only 36--39\% of fault runs do.
-The samples agree: 82--84 of 176 runs propagate, and pass, propagation and unauthorized outcomes
-each match across all three in 92--95\% of cases. No agent reads a payment's result, so executor
-faults cannot propagate, and executors corrected 94 of 96 plan-level wrong amounts and redirects
-from the facts they cite. Researcher faults spread farthest (the planner in 57\% of runs and 1.7
-executors) and leave an incorrect, unrecallable email in 40\% of runs. All 27 runs that store a
-wrong KV value also send an incorrect email that read it, but the read is the only visible source
-in at most 6: the others also cite a corrupted fact or got the wrong value in the plan's text.
-Corrupting a stored value directly (16 runs; plan and cited facts stay correct) isolates the path:
-12 emails sent the corrupted value, 8 of them although their plan text stated the right one; 2
-flagged the mismatch and 2 kept the plan's value. All three policies find these readers.
-Unauthorized actions follow 58\% of adversarial faults and 5--14\% of accidental ones, but 32 of
-those 46 adversarial runs are by construction: a redirected call is itself the action, and executors
-carry out injected plan steps. At the researcher (14 of 32), an injected instruction caused none in
-any sample, while a redirected account did in 81--88\% of runs (one injection wording).
+\para{RQ1: Propagation (Fig.~\ref{fig:prop}).} Of 40 clean runs under the current checker, 39 pass;
+without recovery, only 36--39\% of fault runs do, or 24--26\% without plan-level wrong amounts and
+redirects, which are weak tests because the step's untouched text usually still states the correct
+value (Appendix~C). The samples agree: 82--84 of 176 runs propagate, and pass, propagation and
+unauthorized outcomes each match across all three in 92--95\% of cases. Matrix executor faults hit
+only payments, which no later agent reads in those runs, so they never propagate. Researcher faults
+spread farthest (the planner in 58\% of runs and 1.7 executors) and leave an incorrect, unrecallable
+email in 40\% of runs. All 27 wrong-KV runs also send an incorrect email that read the key, but the
+read is the only visible source in at most 6. Corrupting a stored value directly (16 runs; the fault
+leaves the plan and cited facts unchanged) isolates the path: 12 emails sent the corrupted value, 8
+of them although their plan text stated the right one; 2 flagged the mismatch and 2 kept the plan's
+value. Unauthorized actions follow 58\% of adversarial faults and 5--14\% of accidental ones. Of those
+46 adversarial runs, 16 are by construction (a redirected call is itself the action) and 16 are
+executors obeying injected plan steps. At the researcher (14 of 32), an injected instruction caused
+none in any sample, while a redirected account or recipient did in 81--88\% of runs (one injection
+wording).
 
-\para{RQ2: Granularity (Table~\ref{tab:gran}).} Stage and message tracking
-never under-invalidate but waste 6.7 and 5.0 unaffected units per fault. Fact tracking keeps
-$7\times$ more records and recomputes half as much. Its overall recall flatters it: in all 32
-propagating planner faults the affected units are just the injected steps' own executors, so any
-tracker finds them. All its misses are researcher faults: 14 of 50 runs (28\%; accidental 16\%,
-adversarial 47\%, and all 4 propagating injected instructions). Only 6 of these runs (12\%; 4--12\% across samples) leave a
-wrong result: two \emph{implicit comparative dependencies} (a corrupted price changes which option
-is cheapest, and steps for the new choice cite only its own facts), three \emph{ambiguities} over a
-fabricated entity and one \emph{collateral
-re-sampling} of the planner. The other 8 only change a signature.
+\para{RQ2: Granularity (Table~\ref{tab:gran}).} Stage and message tracking never under-invalidate, by
+construction, but waste 6.7 and 5.0 unaffected units per fault. Fact tracking keeps $7\times$ more
+records and recomputes half as much, but needs a finer oracle than the faulty unit: told only $v_0$,
+precision falls from 0.97 to 0.47 and cost rises from 0.48 to 0.78. Its overall recall also flatters
+it: the 32 propagating planner faults affect only the injected steps' own executors, which the
+oracle names. All its misses are researcher faults: 14 of 50 runs (28\%;
+accidental 16\%, adversarial 47\%). Only 6 of these runs (12\%; 4--12\% across samples) leave a wrong
+result: two \emph{implicit comparative dependencies} (a corrupted price changes which option is
+cheapest), three \emph{ambiguities} over a
+fabricated entity and one \emph{collateral re-sampling} of the planner. In the other 8 no executor's
+call is wrong. The cost estimate assumes executors keep their results when the plan is re-run; if
+they cannot, researcher faults cost 0.71, not 0.51.
 
 \para{RQ3: Baselines (Table~\ref{tab:base}).} Replay accounts for what cannot be undone but does not
 test repair: a replayed restart reuses cached clean responses and the verifier restores the
-pre-injection output, so their 100\% is by construction. Restart leaves incorrect emails in
-23\% of runs (7\% to the attacker) and sends 0.8 duplicates per run; an unauthorized action
-remains after 16\% of adversarial and no accidental faults, a wrong email after 17\% and 27\%. The
-live rows measure repair. Restart restored state in all 44 cases. Verify detected all 44 faults and
-ended correct in 43 (a retried plan miscomputed a payment), flagging 4.5\% of clean-run outputs. It
-prevents the wrong emails but costs every run: 1.06$\times$ extra tokens and about twice the time
-even without a fault (41.3\,s). Clean runs, one at a time, took a median of 20.9\,s
-(17.6--32.5\,s). The campus model recovered less reliably (Appendix~B).
+pre-injection output, so starred results are by construction. Restart leaves incorrect emails in
+23\% of runs (7\% to the attacker); an unauthorized action remains after 16\% of adversarial and no
+accidental faults, a wrong email after 18\% and 27\%. The live rows measure repair. Restart restored
+state in all 44 cases. Verify detected all 44 faults and ended correct in 43 (a retried plan
+miscomputed a payment), flagging 4.5\% of clean-run outputs. Here it prevents the wrong emails but
+costs every run: 1.06$\times$ extra tokens and about twice the time even without a fault (41.3\,s).
+Clean runs, one at a time, took a median of 20.9\,s (17.6--32.5\,s).
 
-\section{Related Work}
+\section{Related Work, Limitations and Next Steps}
 Selective re-execution follows intrusion/rollback recovery~\cite{retro,rollback}; compensation
 and fact tracking follow sagas and provenance~\cite{sagas,provenance}; agent security and failure
-studies~\cite{greshake,agentdojo,mast} motivate our faults. REVISE~\cite{revise} and
-dependency-guided rollback~\cite{dgrr} repair revisions and faulty memories of one
-agent; we study faults spreading across agents and shared state.
+studies~\cite{greshake,agentdojo,mast} motivate our faults. REVISE~\cite{revise} recovers workflows
+from user revisions and dependency-guided rollback~\cite{dgrr} repairs one agent's faulty memories;
+we study faults spreading across agents and shared state.
 
-\section{Limitations and Next Steps}
-\emph{Internal validity}: faults are injected into results with an oracle-identified $v_0$,
-which favors the fact policy; the verifier sees inputs contradicting the corrupted result, which
-favors always-verify. A plan-level fabricated step kept the original
-instruction, so executors paid the real payee twice when it named the account (36 of 48 runs) and
-otherwise the fabricated one, which alone spreads accidental unauthorized actions over 5--14\%. \emph{External validity}:
-synthetic tasks, two seeds. \emph{Deviation}: hosted models replace the proposed CPU models
-(Haiku, about \$1.05; campus: Appendix~B). \emph{Next steps}: fact tracking could halve
-recomputation, with wrong reuse in 4--12\% of propagating researcher faults. Phase~2 tests it
-against full restart, suffix replay and always-verify. State restore comes first, per the proposal feedback: a whole-run snapshot breaks once
-others write after the fault (Appendix~A).
+\emph{Internal validity}: faults are injected into results at an oracle-known location; the
+verifier sees inputs contradicting the corrupted result, which favors always-verify. A plan-level
+fabricated step kept the original instruction, which alone spreads accidental unauthorized actions
+over 5--14\% (Appendix~C). \emph{External validity}: synthetic tasks, two seeds. \emph{Deviation}:
+hosted models replace the proposed CPU models (Haiku, about \$1.05; campus: Appendix~B). \emph{Next
+steps}: fact tracking could halve recomputation given the corrupted facts, with wrong reuse in
+4--12\% of propagating researcher faults, and save about a fifth given only the unit. Phase~2 tests
+this, with time for state restore as the proposal feedback asked.
 
 {\footnotesize
 \begin{thebibliography}{9}
@@ -206,7 +204,7 @@ rollback-recovery protocols in message-passing systems. \emph{ACM Comput.\ Surv.
 \bibitem{sagas} H.~Garcia-Molina, K.~Salem. Sagas. \emph{SIGMOD}, 1987.
 \bibitem{provenance} P.~Buneman, S.~Khanna, W.-C.~Tan. Why and where: A characterization of
 data provenance. \emph{ICDT}, 2001.
-\bibitem{greshake} K.~Greshake et al. Not what you've signed up for: Compromising real-world
+\bibitem{greshake} K.~Greshake, S.~Abdelnabi et al. Not what you've signed up for: Compromising real-world
 LLM-integrated applications with indirect prompt injection. \emph{AISec}, 2023.
 \bibitem{agentdojo} E.~Debenedetti et al. AgentDojo: A dynamic environment to evaluate prompt
 injection attacks and defenses for LLM agents. \emph{NeurIPS Datasets and Benchmarks}, 2024.
@@ -217,7 +215,6 @@ Workflows. arXiv:2609.00643, 2026.
 Rollback Repair for Memory-Augmented Agents. arXiv:2608.10502v2, 2026.
 \end{thebibliography}}
 
-\clearpage
 \appendix
 \section{Timeline and Milestones}
 \small
@@ -235,5 +232,36 @@ Dec 4--10 & Final experiments on held-out task seeds 2--3, figures, final report
 \end{tabular}
 
 \IfFileExists{pilot.tex}{\input{pilot.tex}}{}
+
+\section{Measurement Notes and Provenance}
+\para{Weak spots.} The fact policy reads the oracle's corrupted facts or steps, so on planner faults
+its precision and recall are 1 by construction. Executors in plan-level wrong-amount and redirect
+faults see the step's original text: across samples it still stated the correct value in 84 of the
+94 runs that did not propagate. A plan-level fabricated step keeps the copied instruction: executors
+paid the real payee twice when it named the account (36 of 48 runs across samples) and otherwise the
+fabricated account. Executors obeying injected plan steps paid the attacker in 48 of 48 runs and
+emailed them in 32. All 4 propagating researcher injected instructions are fact-level misses; 2 of the
+14 miss runs come only from $\sigma$ comparing an unused amount field on KV writes. On directly
+corrupted KV values all three policies find the readers.
+
+\para{Variability.} In 22 of the 88 task--cell pairs both placements coincide, leaving 154 distinct
+cases per sample. First sample, 95\% over tasks: fact recall 0.82--0.93, miss 10--24\%, cost
+0.44--0.53. At least one unit differs in 19--25\% of uncached clean reruns, and noise is measured on
+clean runs only. Researcher-fault propagation matches across samples in 85\% of cases. The repeated
+samples share the same 8 tasks. Table~1 covers propagated runs: over all 176, Fact's pooled downstream
+precision is 0.76, and in the 94 runs that did not propagate it invalidates an unaffected unit in 45\%.
+
+\para{Provenance.} The 853 responses behind the first sample were recorded before the first committed
+run (\texttt{results/phase1\_haiku}), in which only the 16 noise reruns were live; that earlier run's
+logs are not kept. Every response replays with no cache miss. The first 16 clean reruns were scored
+by the original, looser checker and their traces were not kept, so they are left out of the 39 of 40.
+The live baselines and latency reruns bypass the cache and cannot be replayed. Causes of wrong results
+were labelled by hand, for the first sample only. On import, live runs' \texttt{tasks.json} had their
+output and cache paths rewritten and a note added (\texttt{experiments/import\_live\_results.py});
+measured values were not changed.
+
+\para{Limits of the evidence.} No API request IDs are stored, so the traces show internal consistency,
+not that calls reached the provider. Where runs executed is the authors' statement, and costs are
+stored tokens at list prices (Haiku \$0.10/\$0.50 per million input/output tokens), not bills.
 
 \end{document}
