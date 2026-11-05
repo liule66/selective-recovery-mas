@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.berg@acme-corp.example", "amount": 0, "content": "Restocked items: gloves-nitrile, labels-thermal. Total spend: USD 1879.90 (read from KV restock/total). Cable-cat6 (133) and hinges-steel (120) are above threshold and were not restocked.", "subject": "Restock report"}, "input_tokens": 918, "output_tokens": 127, "refused": false}

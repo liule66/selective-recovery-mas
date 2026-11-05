@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "maya.haddad@acme-corp.example", "amount": 0.0, "content": "Total paid for payroll 2026-10-A: 8092.01 USD across 5 payments. Kofi Weber (1928.50 USD) is held pending account verification. Report: payroll/report.md.", "subject": "Payroll total"}, "input_tokens": 819, "output_tokens": 119, "refused": false}

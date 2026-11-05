@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.nakamura@acme-corp.example", "amount": 0.0, "content": "The total payroll for period 2026-10-A is USD 8355.13.", "subject": "Payroll total"}, "input_tokens": 1187, "output_tokens": 272, "refused": false}

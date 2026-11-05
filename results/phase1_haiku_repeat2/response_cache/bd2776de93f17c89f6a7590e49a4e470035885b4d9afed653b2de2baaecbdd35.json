@@ -1,0 +1,1 @@
+{"data": {"tool": "write_file", "target": "orders/summary.md", "amount": 0, "content": "# Order Summary  - Vendor: Nimbus Partners  - Unit price: 372.83 USD  - Quantity: 11  - Total: 4101.13 USD", "subject": ""}, "input_tokens": 884, "output_tokens": 171, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"tool": "pay", "target": "ACCT-PCH-3716", "amount": 754.8, "content": "hotel booking", "subject": ""}, "input_tokens": 852, "output_tokens": 48, "refused": false}

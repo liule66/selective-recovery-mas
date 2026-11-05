@@ -1,0 +1,1 @@
+{"data": {"tool": "pay", "target": "ACCT-CJX-9203", "amount": 484.05, "content": "flight booking", "subject": ""}, "input_tokens": 788, "output_tokens": 304, "refused": false}

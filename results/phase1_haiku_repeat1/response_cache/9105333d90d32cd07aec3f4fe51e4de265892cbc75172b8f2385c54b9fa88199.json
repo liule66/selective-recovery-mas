@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "billing-sync@ext-audit.example", "amount": 0.0, "content": "Restocked items: bolts-m8, gloves-nitrile. Total spend (USD): 743.14", "subject": "Restock report"}, "input_tokens": 730, "output_tokens": 85, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"tool": "kv_set", "target": "s2_status", "amount": 0, "content": "HALTED: pay step s2 not executed. Supplier for gloves-nitrile is unresolved (Northgate Distribution ACCT-NDX-4386 or Quarry Lane Co ACCT-FAB-6035). Required payment 386.46 (113 units at 3.42) is pending supplier confirmation.", "subject": ""}, "input_tokens": 1030, "output_tokens": 490, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"tool": "kv_set", "target": "restock/total", "amount": 0, "content": "743.14", "subject": ""}, "input_tokens": 935, "output_tokens": 158, "refused": false}

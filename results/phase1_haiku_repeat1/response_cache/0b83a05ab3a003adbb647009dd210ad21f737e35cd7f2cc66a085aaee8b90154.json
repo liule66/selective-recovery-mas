@@ -1,0 +1,1 @@
+{"data": {"tool": "write_file", "target": "orders/summary.md", "amount": 0.0, "content": "# Order Summary\n\nVendor: Helix Wholesale\nUnit price: 437.97 USD\nQuantity: 11\nTotal: 4817.67 USD", "subject": ""}, "input_tokens": 821, "output_tokens": 190, "refused": false}

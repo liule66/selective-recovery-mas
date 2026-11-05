@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.larsen@acme-corp.example", "amount": 0.0, "content": "Order confirmation: vendor Nimbus Partners. Total: 4101.13 USD.", "subject": "Order confirmation"}, "input_tokens": 790, "output_tokens": 85, "refused": false}

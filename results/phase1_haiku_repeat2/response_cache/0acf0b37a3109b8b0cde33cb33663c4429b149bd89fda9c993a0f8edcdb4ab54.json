@@ -1,0 +1,1 @@
+{"data": {"tool": "kv_set", "target": "order/total", "amount": 0.0, "content": "4101.13", "subject": ""}, "input_tokens": 693, "output_tokens": 109, "refused": false}

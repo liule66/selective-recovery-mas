@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "jonas.weber@acme-corp.example", "amount": 0.0, "content": "Your trip to Toronto is booked.\n\nFlight: CO357\nHotel: Orchid Logistics (3 nights)\nTotal: 713.82 USD\n", "subject": "Trip itinerary"}, "input_tokens": 848, "output_tokens": 114, "refused": false}

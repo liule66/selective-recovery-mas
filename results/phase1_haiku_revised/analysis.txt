@@ -65,6 +65,14 @@ research injected_instruction     0  16
 
 Shared state: 27 runs store a wrong KV value without recovery; 27 incorrect emails were sent by an executor that read a wrong key. A read alone does not show the cause: 10 also cite a corrupted fact, 19 have the wrong value in the plan's text for that step, and the read is the only visible source in at most 6.
 
+Direct shared-state fault (16 runs corrupt a stored KV value; the plan and cited facts stay correct): 15 propagate; 16 emails read the key.
+Email outcome, by whether the plan's text for the step also states the correct value:
+outcome            kept the correct value  sent the corrupted value  states both values
+plan_states_value                                                                      
+False                                   0                         4                   0
+True                                    2                         8                   2
+Recall on propagated runs: {'stage': 1.0, 'message': 1.0, 'fact': 1.0}
+
 95% intervals, resampling tasks (between-task spread only, not model sampling):
   fact recall (propagated): 0.877 [0.818, 0.934]
   fact miss runs (propagated): 0.171 [0.103, 0.237]
@@ -78,6 +86,41 @@ cause
 comparative dependency    2
 fabricated entity         3
 re-sampling               1
+
+Independent samples of the fault matrix:
+                                           first  repeat1  repeat2
+clean pass                                 8.000    8.000    7.000
+fault runs                               176.000  176.000  176.000
+pass                                       0.386    0.381    0.364
+propagated                                82.000   83.000   84.000
+unauthorized                               0.290    0.330    0.312
+wrong email                                0.227    0.261    0.244
+unauthorized adversarial                   0.575    0.562    0.575
+unauthorized accidental                    0.052    0.135    0.094
+researcher redirect unauthorized           0.875    0.812    0.875
+researcher injection unauthorized          0.000    0.000    0.000
+planner wrong/redirect propagated          0.000    0.000    2.000
+planner fabricated, real payee overpaid   16.000    8.000   12.000
+stage recompute                            0.966    0.969    0.956
+message recompute                          0.855    0.855    0.849
+fact precision                             0.974    0.968    0.964
+fact recall                                0.877    0.891    0.891
+fact miss runs                             0.171    0.145    0.167
+fact recompute                             0.479    0.485    0.485
+researcher propagated                     50.000   51.000   50.000
+researcher fact recall                     0.798    0.823    0.816
+researcher fact miss runs                  0.280    0.235    0.280
+researcher wrong-result runs               0.120    0.118    0.040
+Cases where every sample gives the same outcome: faulty_success 93.8%, propagated 92.0%, faulty_unauthorized_action 94.9%
+Clean runs over all samples and uncached reruns: 55/56 pass.
+
+Live baselines on Claude (44 cases, restart and verification uncached; fault runs replayed; counts out of 44):
+                state_ok  unauthorized  wrong_email  cache_hits  extra_tokens  median_s  max_s
+no recovery         18.0          13.0         11.0       496.0           NaN       NaN    NaN
+full restart        44.0           4.0         11.0         0.0          0.99     19.01  31.79
+verify + retry      43.0           0.0          0.0         0.0          1.16     40.14  58.88
+  verify: detected 44/44, task success 43/44, flags on other outputs 19/484
+  verify on clean runs: flags 2/44, task success 4/4, extra tokens 1.06x, median 41.3 s
 
 Live timing, Claude (16 uncached clean reruns, one at a time, s): median 20.9, range 17.6-32.5; 9 units 19.1-20.9, 10 units 17.6-22.7, 11 units 20.7-22.8, 14 units 30.0-32.5
   pass 16/16; mean units differing from the cached run 0.375

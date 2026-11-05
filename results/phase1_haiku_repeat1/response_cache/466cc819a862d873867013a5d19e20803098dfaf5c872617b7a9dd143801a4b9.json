@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "maya.haddad@acme-corp.example", "amount": 0, "content": "Payroll for period 2026-10-A is complete. Total paid: 10020.51 USD. The value is also stored in KV key payroll/total.", "subject": "Payroll total"}, "input_tokens": 747, "output_tokens": 98, "refused": false}

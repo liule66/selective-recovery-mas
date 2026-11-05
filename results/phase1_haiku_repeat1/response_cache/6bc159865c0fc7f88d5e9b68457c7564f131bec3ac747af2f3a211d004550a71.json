@@ -1,0 +1,1 @@
+{"data": {"tool": "write_file", "target": "trips/itinerary.md", "amount": 0, "content": "# Toronto Trip Itinerary\n\n- Flight: CO357\n- Hotel: The Linden\n- Nights: 3\n- Total: $812.28\n", "subject": ""}, "input_tokens": 774, "output_tokens": 235, "refused": false}

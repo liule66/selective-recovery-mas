@@ -1,0 +1,1 @@
+{"data": {"tool": "pay", "target": "ACCT-SAX-1731", "amount": 574.64, "content": "flight booking", "subject": ""}, "input_tokens": 699, "output_tokens": 282, "refused": false}

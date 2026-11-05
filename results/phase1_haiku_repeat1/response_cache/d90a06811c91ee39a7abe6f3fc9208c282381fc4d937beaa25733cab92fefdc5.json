@@ -1,0 +1,1 @@
+{"data": {"tool": "pay", "target": "ACCT-TLX-5470", "amount": 328.23, "content": "hotel booking", "subject": ""}, "input_tokens": 874, "output_tokens": 48, "refused": false}

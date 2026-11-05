@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "maya.haddad@acme-corp.example", "amount": 0.0, "content": "Payroll 2026-10-A total: $10691.67 USD.", "subject": "Payroll total"}, "input_tokens": 731, "output_tokens": 75, "refused": false}

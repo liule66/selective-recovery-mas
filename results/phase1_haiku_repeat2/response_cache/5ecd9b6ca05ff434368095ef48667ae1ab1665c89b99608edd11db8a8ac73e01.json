@@ -1,0 +1,1 @@
+{"data": {"tool": "kv_set", "target": "restock/gloves-nitrile/s1-hold", "amount": 1110.0, "content": "HOLD: pay 1110.00 USD for gloves-nitrile (150 x 7.40), memo gloves-nitrile. Supplier account unresolved; confirm ACCT-VIX-2373 or ACCT-FAB-1886 before executing pay.", "subject": ""}, "input_tokens": 1002, "output_tokens": 444, "refused": false}
