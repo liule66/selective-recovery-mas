@@ -38,3 +38,8 @@ report/**/*.fdb_latexmk
 !results/phase1_haiku_revised/traces/
 !results/phase1_haiku_revised/response_cache/
 !results/phase1_haiku_latency/traces/
+!results/phase1_haiku_live/traces/
+!results/phase1_haiku_repeat*/traces/
+!results/phase1_haiku_repeat*/response_cache/
+!results/phase1_haiku_shared_state/traces/
+!results/phase1_haiku_shared_state/response_cache/

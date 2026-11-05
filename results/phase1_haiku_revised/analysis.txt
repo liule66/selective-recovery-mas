@@ -29,7 +29,41 @@ adversarial stage      35      0.240   1.000      0.000      0.974
             message    35      0.291   1.000      0.000      0.874
             fact       35      1.000   0.824      0.257      0.413
 
-Shared state: 27 runs store a wrong KV value without recovery; in 27 of them an incorrect email was sent by an executor that read a wrong key.
+Invalidation by where the fault entered (propagated runs, downstream units):
+                                runs  precision  recall  miss_runs   over  recompute
+subset                 policy                                                       
+planner                stage      32      0.197   1.000      0.000  6.250      0.886
+                       message    32      0.197   1.000      0.000  6.250      0.886
+                       fact       32      1.000   1.000      0.000  0.000      0.433
+researcher             stage      50      0.352   1.000      0.000  7.060      1.017
+                       message    50      0.493   1.000      0.000  4.180      0.835
+                       fact       50      0.958   0.798      0.280  0.180      0.508
+researcher accidental  stage      31      0.427   1.000      0.000  6.355      1.028
+                       message    31      0.597   1.000      0.000  3.452      0.847
+                       fact       31      0.932   0.873      0.161  0.290      0.606
+researcher adversarial stage      19      0.231   1.000      0.000  8.211      1.001
+                       message    19      0.324   1.000      0.000  5.368      0.816
+                       fact       19      1.000   0.675      0.474  0.000      0.350
+
+Planner faults: in 32 of 32 propagated runs the affected units are exactly the executors of the injected steps.
+Fact-level misses on researcher faults, runs: {'fabricated': 3, 'injected_instruction': 4, 'malicious_redirect': 5, 'stale_value': 0, 'wrong_value': 2} of {'fabricated': 10, 'injected_instruction': 4, 'malicious_redirect': 15, 'stale_value': 11, 'wrong_value': 10}
+
+Dependency records per propagated run:
+         items   bytes
+stage     12.0   296.9
+message   24.5   389.3
+fact      83.1  3628.3
+
+Unauthorized actions after adversarial faults, by cell. An executor redirect is itself the action and executors carry out injected plan steps, so those cells are 100% by construction:
+                               runs  of
+stage    ftype                         
+exec     malicious_redirect      16  16
+plan     injected_instruction    16  16
+         malicious_redirect       0  16
+research injected_instruction     0  16
+         malicious_redirect      14  16
+
+Shared state: 27 runs store a wrong KV value without recovery; 27 incorrect emails were sent by an executor that read a wrong key. A read alone does not show the cause: 10 also cite a corrupted fact, 19 have the wrong value in the plan's text for that step, and the read is the only visible source in at most 6.
 
 95% intervals, resampling tasks (between-task spread only, not model sampling):
   fact recall (propagated): 0.877 [0.818, 0.934]
@@ -39,7 +73,7 @@ Shared state: 27 runs store a wrong KV value without recovery; in 27 of them an 
   pass without recovery (all): 0.386 [0.335, 0.443]
   unauthorized (all): 0.290 [0.256, 0.324]
 
-Fact-level misses: 14 runs of 82 propagated; 6 (7.3%) leave a wrong result, 8 only change a signature (fact_misses.csv).
+Fact-level misses: 14 runs of 82 propagated; 6 (7.3%, 12.0% of the 50 propagated researcher faults) leave a wrong result, 8 only change a signature (fact_misses.csv).
 cause
 comparative dependency    2
 fabricated entity         3

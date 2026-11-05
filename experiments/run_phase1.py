@@ -26,7 +26,7 @@ import pandas as pd  # noqa: E402
 from srmas.analysis.counterfactual import actual_affected, affected_pairs, score  # noqa: E402
 from srmas.analysis.propagation import propagation  # noqa: E402
 from srmas.baselines.baselines import always_verify, full_restart  # noqa: E402
-from srmas.faults.injector import ACCIDENTAL, fault_matrix  # noqa: E402
+from srmas.faults.injector import ADVERSARIAL, FaultSpec, fault_matrix, state_matrix  # noqa: E402
 from srmas.llm.base import LLM, make_llm  # noqa: E402
 from srmas.tasks.base import Task  # noqa: E402
 from srmas.tasks.templates import make_suite  # noqa: E402
@@ -44,9 +44,8 @@ def source_identity() -> dict[str, Any]:
         return json.loads(stamp.read_text()) if stamp.exists() else {"code_revision": "unknown"}
 
 
-def run_task(task: Task, llm: LLM, fault_seeds: tuple[int, ...], raw_dir: Path,
+def run_task(task: Task, llm: LLM, specs: list[FaultSpec], raw_dir: Path,
              noise_runs: int, skip_verify: bool, live_baselines: bool = False,
-             fault_types: tuple[str, ...] = (),
              verify_repair: str = "retry") -> tuple[list[dict[str, Any]], dict[str, Any]]:
     tdir = raw_dir / task.task_id
     tdir.mkdir(parents=True, exist_ok=True)
@@ -75,16 +74,14 @@ def run_task(task: Task, llm: LLM, fault_seeds: tuple[int, ...], raw_dir: Path,
     info["noise"] = noise
 
     rows = []
-    for spec in fault_matrix(fault_seeds):
-        if fault_types and spec.ftype not in fault_types:
-            continue
+    for spec in specs:
         (tdir / "active_case.json").write_text(json.dumps({
             "phase": "fault_case", "stage": spec.stage, "ftype": spec.ftype,
             "fault_seed": spec.seed}), encoding="utf-8")
         row: dict[str, Any] = {
             "task_id": task.task_id, "template": task.template, "stage": spec.stage,
             "ftype": spec.ftype, "fault_seed": spec.seed,
-            "fault_class": "accidental" if spec.ftype in ACCIDENTAL else "adversarial",
+            "fault_class": "adversarial" if spec.ftype in ADVERSARIAL else "accidental",
             "clean_success": clean.check["success"],
             "clean_tokens": clean.tokens, "status": "ok",
         }
@@ -147,6 +144,8 @@ def main() -> None:
                     help="retry: one uncached model call per flagged output; restore: the original "
                          "Phase 1 repair (pre-injection output, estimated retry tokens), replayable from cache")
     ap.add_argument("--fault-types", default="", help="optional comma-separated pilot subset")
+    ap.add_argument("--shared-state", action="store_true",
+                    help="only corrupt stored KV values that a later step reads, instead of the fault matrix")
     ap.add_argument("--cache-dir", default="", help="use a fresh directory for independent experiments")
     ap.add_argument("--cache-only", action="store_true",
                     help="replay recorded responses only; a cache miss fails the task (no API calls)")
@@ -166,6 +165,8 @@ def main() -> None:
     fault_types = tuple(filter(None, args.fault_types.split(",")))
     if fault_types and not set(fault_types) <= {s.ftype for s in fault_matrix(fault_seeds)}:
         ap.error("Unknown fault type")
+    specs = (state_matrix(fault_seeds) if args.shared_state
+             else [s for s in fault_matrix(fault_seeds) if not fault_types or s.ftype in fault_types])
 
     out = Path(args.out) if args.out else ROOT / "results" / f"phase1_{args.llm}_{time.time_ns()}"
     if out.exists() and any(out.iterdir()):
@@ -184,8 +185,8 @@ def main() -> None:
     t0 = time.time()
     rows, infos, failures = [], [], []
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
-        futs = {pool.submit(run_task, t, llm, fault_seeds, raw, args.noise_runs, args.skip_verify,
-                            args.live_baselines, fault_types, args.verify_repair): t
+        futs = {pool.submit(run_task, t, llm, specs, raw, args.noise_runs, args.skip_verify,
+                            args.live_baselines, args.verify_repair): t
                 for t in tasks}
         for fut in as_completed(futs):
             t = futs[fut]
@@ -218,7 +219,7 @@ def main() -> None:
             "tasks": sorted(infos, key=lambda i: i["task_id"]), "failures": failures,
             "config": vars(args), "python": platform.python_version(),
             **source_identity(),
-            "expected_fault_runs": len(tasks) * sum(not fault_types or s.ftype in fault_types for s in fault_matrix(fault_seeds)),
+            "expected_fault_runs": len(tasks) * len(specs),
             "measurement_mode": "live_baselines" if args.live_baselines else "cached_replay",
             "client_min_interval_s": getattr(llm, "min_interval_s", 0.0),
             "verification_repair": ("one_uncached_model_retry" if args.verify_repair == "retry"

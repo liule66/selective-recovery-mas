@@ -57,30 +57,28 @@ def fig_propagation(d: pd.DataFrame, out: Path) -> None:
     combos = [(s, f) for s in STAGE_ORDER for f in FTYPE_ORDER if ((d.stage == s) & (d.ftype == f)).any()]
     g = d.groupby(["stage", "ftype"])
     labels = [f"{s}: {SHORT[f]}" for s, f in combos]
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(7.0, 2.6), gridspec_kw={"width_ratios": [1, 1.25]})
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(7.0, 1.8), gridspec_kw={"width_ratios": [1, 1.25]})
     y = range(len(combos))[::-1]
     a1.barh(list(y), [g.get_group(c)["downstream_affected"].mean() for c in combos], height=0.7,
             color=[SERIES[STAGE_ORDER.index(s)] for s, _ in combos], edgecolor="white")
     a1.set_yticks(list(y), labels)
-    a1.set_xlabel("downstream units changed (mean)")
     a1.grid(axis="y", visible=False)
-    a1.set_title("(a) Spread of a fault", loc="left", color=INK)
+    a1.set_title("(a) Downstream units changed (mean)", loc="left", color=INK, fontsize=8.5, pad=3)
 
     w = 0.27
     metrics = [("faulty_success", "task failed", lambda s: 1 - s.mean()),
                ("unauthorized", "unauthorized action", lambda s: s.mean()),
-               ("bad_emails", "wrong email sent (irreversible)", lambda s: (s > 0).mean())]
+               ("bad_emails", "wrong email (irreversible)", lambda s: (s > 0).mean())]
     for i, (col, name, fn) in enumerate(metrics):
         vals = [100 * fn(g.get_group(c)[col].astype(float)) for c in combos]
         a2.barh([v + (1 - i) * w for v in y], vals, height=w, color=SERIES[i], label=name,
                 edgecolor="white", linewidth=0.5)
     a2.set_yticks(list(y), [""] * len(combos))
-    a2.set_xlabel("% of fault runs")
+    a2.tick_params(axis="y", length=0)
     a2.set_xlim(0, 100)
     a2.grid(axis="y", visible=False)
-    a2.legend(loc="upper center", bbox_to_anchor=(0.45, -0.2), ncol=3, fontsize=6.5,
-              handlelength=1.2, columnspacing=1.0)
-    a2.set_title("(b) Outcome without recovery", loc="left", color=INK)
+    a2.legend(loc="center left", bbox_to_anchor=(1.01, 0.5), fontsize=8, handlelength=1.2, borderaxespad=0)
+    a2.set_title("(b) Fault runs without recovery (%)", loc="left", color=INK, fontsize=8.5, pad=3)
     fig.tight_layout()
     fig.savefig(out / "fig_propagation.png")
     plt.close(fig)
