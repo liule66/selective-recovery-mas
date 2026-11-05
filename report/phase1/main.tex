@@ -58,7 +58,7 @@ email is \emph{irreversible}.
 
 \para{Threat model.} One unit $v_0$ emits a faulty result. Accidental faults are wrong/stale
 values or fabricated entities. Adversarial faults rewrite a result with an injected instruction
-(pay an attacker \$250 and email the ledger) or redirect a payee/recipient. Unlike source-level
+or redirect a payee/recipient. Unlike source-level
 prompt injection~\cite{greshake,agentdojo}, this controls $v_0$'s output directly, but re-running
 $v_0$ removes it. The attacker knows the schemas and
 goal but cannot alter tools, logging, checkers or other agents' prompts. Recovery receives
@@ -85,7 +85,7 @@ All agents run on Claude Haiku~5.5 with schema-constrained JSON output.
 A full factorial design crosses 8 tasks, 11 valid (stage, fault type) cells, and 2 placements,
 giving 176 runs, each with one fault injected after generation. For 22 of the 88 task--cell pairs both
 placements are identical, leaving 154 independent runs. Task seeds 0--1
-are for development; 2--3 are held out for Phase~2.
+are for development; 2--3 are held out.
 
 \para{Tracking policies.} \emph{Stage}: invalidate $v_0$'s stage and all later ones.
 \emph{Message}: transitive closure over inter-agent messages and shared-state reads.
@@ -95,8 +95,8 @@ their executors, and readers of the state they wrote.
 \para{Counterfactual comparison.} Responses are memoized by prompt hash, so in $r'$ only
 units whose inputs changed are re-sampled. $\sigma$ keeps tool, target, amount, stored
 value, and the amounts, accounts, addresses and codes in text, discarding paraphrase. Executor
-units are aligned by content before plan position. As a noise control, 16 uncached clean reruns
-differ from the cached run in 0.38 units on average.
+units are aligned by content before plan position. As a noise control, two sets of 16 uncached
+clean reruns each differ from the cached run by a mean of 0.38 units.
 
 \para{Baselines.} \emph{Full restart} restores files/KV, refunds payments, and re-executes.
 \emph{Always-verify} audits each output with Haiku, restores a flagged output to its pre-injection
@@ -145,7 +145,7 @@ vs.\ a clean run; verifier retry and fact-level (all-run mean) costs are estimat
 \end{table}
 
 \section{Evaluation}
-\para{RQ1: Propagation (Fig.~\ref{fig:prop}).} All 8 clean runs and 16 uncached reruns pass the
+\para{RQ1: Propagation (Fig.~\ref{fig:prop}).} All 8 clean runs and 32 uncached reruns pass the
 checker; without recovery, only 39\% of fault runs do. Only 82 of 176 runs propagate to a
 downstream unit: no agent reads a payment's
 result, so executor faults cannot, and executors corrected all plan-level wrong amounts and
@@ -176,9 +176,9 @@ compensable state. It cannot retract email, leaving incorrect emails in
 remains after 16\% of adversarial and no accidental faults; a wrong email after 17\% and 27\%. The
 original verifier detected all injected faults and flagged 4.5\% of clean-run outputs, at an
 estimated 1.18$\times$ extra tokens on fault runs and 1.04$\times$ on clean runs; its output
-restoration is an optimistic repair model. \emph{Latency}: the Claude runs were not timed. On the
-live campus route (Appendix~B) a clean 10-unit run took 6--16\,s, restart 7.5\,s and always-verify
-17.3\,s (medians of 6).
+restoration is an optimistic repair model. \emph{Latency}: 16 uncached clean Claude runs, one at a
+time, took a median of 20.9\,s (17.6--32.5\,s); fault runs are replays, so untimed. On the
+campus route (Appendix~B), restart took 7.5\,s and always-verify 17.3\,s.
 
 \section{Related Work}
 Selective re-execution follows intrusion/rollback recovery~\cite{retro,rollback}; compensation
@@ -193,10 +193,10 @@ the verifier sees inputs contradicting the corrupted result, which favors always
 Re-sampling makes counterfactuals approximate. Fine-grained oracle locations favor
 the fact policy. A plan-level fabricated step kept the original instruction, so executors paid
 the real payee twice. \emph{External validity}: synthetic
-tasks, two task seeds, no timeout faults. \emph{Deviation}: hosted models replace the proposed
-local CPU models (Haiku, about \$0.30; a campus model in Appendix~B). \emph{Next steps}: fact
-tracking promises half of stage tracking's recomputation, with wrong reuse in 7\% of propagated
-runs. Phase~2 builds the recovery engine (Appendix~A) to test that saving against full restart,
+tasks, two task seeds. \emph{Deviation}: hosted models replace the proposed
+local CPU models (Haiku, about \$0.32; campus model: Appendix~B). \emph{Next steps}: fact
+tracking could halve stage tracking's recomputation, with wrong reuse in 7\% of propagated
+runs. Phase~2 builds recovery to test this against full restart,
 suffix replay and always-verify, and adds timeout and shared-state faults.
 
 {\footnotesize

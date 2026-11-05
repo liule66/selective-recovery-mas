@@ -23,7 +23,7 @@ Claude Haiku 5.5.
 
 | Finding | Number |
 |---|---|
-| Clean runs that pass the checker | 8 of 8 (uncached reruns: 16 of 16) |
+| Clean runs that pass the checker | 8 of 8 (uncached reruns: 32 of 32) |
 | Fault runs that still pass the checker without recovery | 39% |
 | Runs where the fault reached a downstream agent | 82 of 176 |
 | Unauthorized actions after adversarial / accidental faults | 58% / 5% |
@@ -47,8 +47,9 @@ Baselines: full restart repairs all files, KV entries and payments but leaves in
 fault at an estimated 1.18× a clean run's tokens on fault runs and 1.04× on clean runs; both its
 detection and its repair are optimistic (see Limitations).
 
-Latency: the Claude runs were not timed. On the live campus model a clean 10-unit run took
-6–16 s, full restart 7.5 s and always-verify 17.3 s (medians of 6 cases).
+Latency: 16 uncached clean Claude runs, one at a time, took a median of 20.9 s (17.6–32.5 s for
+9–14 units). On the live campus model, full restart took 7.5 s and always-verify 17.3 s (medians
+of 6 cases).
 
 Per-class results, intervals, affected stages and timing are in
 [results/phase1_haiku_revised/analysis.txt](results/phase1_haiku_revised/analysis.txt).
@@ -101,6 +102,7 @@ python experiments/phase1_analysis.py /tmp/srmas_replay
 `/tmp/srmas_replay/runs.csv`, `summary.txt`, `analysis.txt` and `fact_misses.csv` then match the committed
 `results/phase1_haiku_revised/` files (wall-clock timings aside). Only the 16 uncached noise
 reruns cannot be replayed; `merge_legacy_verify.py` copies them from the original run.
+`phase1_analysis.py` reads the live timings from `results/phase1_haiku_latency/`.
 
 ## Running new experiments
 
@@ -108,6 +110,14 @@ reruns cannot be replayed; `merge_legacy_verify.py` copies them from the origina
 python experiments/run_phase1.py --llm mock --out /tmp/srmas_mock          # offline harness check
 python experiments/run_phase1.py --llm haiku --noise-runs 2 --out /tmp/srmas_haiku   # live Claude API calls
 python experiments/make_figures.py /tmp/srmas_haiku
+```
+
+To repeat the Claude latency measurement (16 live clean reruns, about $0.04), copy the committed
+cache so nothing else calls the API, then:
+
+```bash
+cp -r results/phase1_haiku_revised/response_cache /tmp/srmas_cache
+python experiments/run_phase1.py --llm haiku --cache-dir /tmp/srmas_cache --skip-verify --noise-runs 2 --workers 1 --out /tmp/srmas_latency
 ```
 
 The Claude client reads the key from `ANTHROPIC_API_KEY` or from `api.txt` at the repository root.
@@ -142,6 +152,7 @@ Every output directory must be new. Useful options: `--templates`, `--task-seeds
 | Directory | What it is |
 |---|---|
 | `results/phase1_haiku_revised/` | **Primary results.** The 176 Claude runs re-scored with the current checker, plus `analysis.txt`, `fact_misses.csv` (what each fact-level miss left behind), full traces (`traces/`: every message, tool call, state access and checker outcome, including restart and always-verify runs) and the response cache |
+| `results/phase1_haiku_latency/` | 16 later live clean Claude reruns (`tasks.json`, `traces/`): end-to-end timing and a second noise estimate |
 | `results/phase1_haiku/` | The original Claude run, with the original checker and metrics (historical) |
 | `results/phase1_triton_pilot/`, `results/phase1_triton_validation_serial/` | Validation of the revised harness (real verification retries, timing) on the UCSD-hosted `api-glm-5.3-flash` model; report Appendix B |
 | `results/phase1_triton_validation/` | Failure manifest of an aborted campus batch, kept rather than dropped |
@@ -165,18 +176,19 @@ and summaries are.
 - **Injector bug.** A plan-level fabricated step kept the copied step's instruction, so executors
   paid the real payee twice instead of paying the fabricated account.
 - **Counterfactual is approximate.** Changed prompts still re-sample, so the counterfactual is
-  approximate. Claude's resampling noise is 0.38 agents per uncached clean rerun; the campus
+  approximate. Claude's resampling noise is 0.38 agents per uncached clean rerun (in both sets of 16); the campus
   model's is 3.0.
-- **Timing.** The Claude run recorded no per-run times and cached replays are not latency. Live
-  timings come from the six-case campus pilot only; the later campus validation spaces requests
-  by at least 1.25 s, so its timings mostly reflect that spacing.
+- **Timing.** The Claude fault runs are replayed from the cache, and replays are not latency.
+  Claude's live timing comes from 16 clean reruns measured on 2026-11-04 from a laptop. Live restart
+  and always-verify timing comes only from the six-case campus pilot; the later campus validation
+  spaces requests by at least 1.25 s, so its timings mostly reflect that spacing.
 - **Fault coverage.** Timeouts and direct shared-state corruption are not injected in Phase 1.
 - **Intervals.** The 95% intervals resample tasks, so they show between-task spread, not model
   sampling variation.
 - **Scale.** Synthetic tasks, two task seeds, and 22 duplicate placements (154 independent runs).
   Task seeds 2–3 are held out for Phase 2 evaluation.
 - **Hosted models.** The proposal planned local CPU models; we used hosted models instead (Claude
-  Haiku, about $0.30; the UCSD campus gateway, about $0.19).
+  Haiku, about $0.32; the UCSD campus gateway, about $0.19).
 
 ## Phase 2 plan
 

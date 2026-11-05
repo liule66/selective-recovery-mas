@@ -1,7 +1,7 @@
 """Phase 1 analyses beyond summary.txt, from one results directory and its traces.
 
 Accidental and adversarial faults separately, affected stages, the shared-state path to email,
-bootstrap intervals, what the fact-level misses did, and live timing from the campus pilot.
+bootstrap intervals, what the fact-level misses did, and live timing (Claude and the campus pilot).
 Makes no model calls. Writes analysis.txt and fact_misses.csv into the results directory.
 
     python experiments/phase1_analysis.py results/phase1_haiku_revised
@@ -108,6 +108,19 @@ def fact_misses(d: pd.DataFrame, tasks: dict[str, Task], out: Path) -> str:
             + m[m.effect == "wrong result"].groupby("cause").size().to_string())
 
 
+def claude_timing() -> str:
+    meta = json.loads((ROOT / "results" / "phase1_haiku_latency" / "tasks.json").read_text(encoding="utf-8"))
+    rows = [(t["clean_units"], n) for t in meta["tasks"] for n in t["noise"]]
+    times = [n["elapsed_s"] for _, n in rows]
+    sizes = sorted({u for u, _ in rows})
+    spread = ", ".join(f"{u} units {min(n['elapsed_s'] for v, n in rows if v == u):.1f}-"
+                       f"{max(n['elapsed_s'] for v, n in rows if v == u):.1f}" for u in sizes)
+    return (f"Live timing, Claude ({len(times)} uncached clean reruns, one at a time, s): median "
+            f"{statistics.median(times):.1f}, range {min(times):.1f}-{max(times):.1f}; {spread}\n"
+            f"  pass {sum(n['success'] for _, n in rows)}/{len(rows)}; mean units differing from the cached "
+            f"run {sum(n['units_differ'] for _, n in rows) / len(rows):.3f}")
+
+
 def live_timing() -> str:
     pilot = ROOT / "results" / "phase1_triton_pilot"
     meta = json.loads((pilot / "tasks.json").read_text(encoding="utf-8"))
@@ -119,7 +132,7 @@ def live_timing() -> str:
             f"  restart median {statistics.median(runs.restart_elapsed_s):.2f}, "
             f"always-verify median {statistics.median(runs.verify_elapsed_s):.2f} (n={len(runs)})\n"
             "phase1_triton_validation_serial spaces requests by at least 1.25 s, so its timings mostly "
-            "reflect that spacing.\nThe Claude run recorded no per-run times; its replay timings are not latency.")
+            "reflect that spacing.\nThe 176 Claude fault runs are replayed from the cache; replay timings are not latency.")
 
 
 def main() -> None:
@@ -134,7 +147,7 @@ def main() -> None:
     text = "\n\n".join([
         clean,
         "Mean affected units by injection stage:\n" + affected.reindex(["research", "plan", "exec"]).round(2).to_string(),
-        by_class(d), shared_state(d, tasks, out), intervals(d), fact_misses(d, tasks, out), live_timing(),
+        by_class(d), shared_state(d, tasks, out), intervals(d), fact_misses(d, tasks, out), claude_timing(), live_timing(),
     ]) + "\n"
     (out / "analysis.txt").write_text(text, encoding="utf-8")
     print(text)

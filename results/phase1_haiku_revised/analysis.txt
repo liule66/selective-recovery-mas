@@ -45,8 +45,11 @@ comparative dependency    2
 fabricated entity         3
 re-sampling               1
 
+Live timing, Claude (16 uncached clean reruns, one at a time, s): median 20.9, range 17.6-32.5; 9 units 19.1-20.9, 10 units 17.6-22.7, 11 units 20.7-22.8, 14 units 30.0-32.5
+  pass 16/16; mean units differing from the cached run 0.375
+
 Live timing, campus pilot (no request spacing; procurement-0, 10 units, s):
   first clean run 16.3; uncached clean repeats [13.3, 6.0]
   restart median 7.53, always-verify median 17.32 (n=6)
 phase1_triton_validation_serial spaces requests by at least 1.25 s, so its timings mostly reflect that spacing.
-The Claude run recorded no per-run times; its replay timings are not latency.
+The 176 Claude fault runs are replayed from the cache; replay timings are not latency.
