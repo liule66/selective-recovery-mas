@@ -1,8 +1,9 @@
 """Phase 1 analyses beyond summary.txt, from one results directory and its traces.
 
-Accidental and adversarial faults separately, affected stages, the shared-state path to email,
-bootstrap intervals, what the fact-level misses did, and live timing (Claude and the campus pilot).
-Makes no model calls. Writes analysis.txt and fact_misses.csv into the results directory.
+Accidental and adversarial faults separately, affected stages, results by where the fault
+entered, the shared-state path to email, bootstrap intervals, what the fact-level misses did,
+repeated samples of the matrix, live recovery baselines, and live timing (Claude and the campus
+pilot). Makes no model calls. Writes analysis.txt and fact_misses.csv into the results directory.
 
     python experiments/phase1_analysis.py results/phase1_haiku_revised
 """
@@ -21,11 +22,13 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from srmas.analysis.misses import call_correct, missed_wrong_units  # noqa: E402
-from srmas.tasks.base import Task, _kv_match  # noqa: E402
+from srmas.analysis.misses import missed_wrong_units, state_fault_readers, wrong_state_emails  # noqa: E402
+from srmas.tasks.base import Task  # noqa: E402
 from srmas.tasks.templates import make_suite  # noqa: E402
 
 GRAN = ["stage", "message", "fact"]
+KEY = ["task_id", "stage", "ftype", "fault_seed"]
+RESULTS = ROOT / "results"
 # Read off the traces of the Claude runs whose misses left a wrong result.
 MISS_CAUSE = {"wrong_value": "comparative dependency", "stale_value": "comparative dependency",
               "fabricated": "fabricated entity", "injected_instruction": "re-sampling",
@@ -57,18 +60,67 @@ def by_class(d: pd.DataFrame) -> str:
             f"Granularity by fault class (propagated runs, downstream units):\n{gran.round(3).to_string()}")
 
 
+def by_entry_point(d: pd.DataFrame, out: Path) -> str:
+    """The overall scores mix faults that any tracker handles with faults that test it."""
+    p = d[d.propagated]
+    planner, researcher = p[p.stage == "plan"], p[p.stage == "research"]
+    subsets = {"planner": planner, "researcher": researcher,
+               "researcher accidental": researcher[researcher.fault_class == "accidental"],
+               "researcher adversarial": researcher[researcher.fault_class == "adversarial"]}
+    table = pd.DataFrame([{
+        "subset": name, "policy": g, "runs": len(sub), "precision": sub[f"{g}_ds_precision"].mean(),
+        "recall": sub[f"{g}_ds_recall"].mean(), "miss_runs": (sub[f"{g}_ds_under"] > 0).mean(),
+        "over": sub[f"{g}_ds_over"].mean(), "recompute": sub[f"{g}_recompute_frac"].mean(),
+    } for name, sub in subsets.items() for g in GRAN]).set_index(["subset", "policy"])
+    records = pd.DataFrame({g: {"items": p[f"{g}_book_items"].mean(), "bytes": p[f"{g}_book_bytes"].mean()}
+                            for g in GRAN}).T
+    own_steps = 0
+    for r in planner.itertuples():
+        clean = json.loads((out / "traces" / r.task_id / "clean.json").read_text(encoding="utf-8"))
+        own_steps += r.downstream_affected == len(set(load_trace(out, r)["nodes"]) - set(clean["nodes"]))
+    misses = researcher.groupby("ftype").apply(lambda s: int((s.fact_ds_under > 0).sum()), include_groups=False)
+    return (f"Invalidation by where the fault entered (propagated runs, downstream units):\n{table.round(3).to_string()}\n\n"
+            f"Planner faults: in {own_steps} of {len(planner)} propagated runs the affected units are exactly "
+            "the executors of the injected steps.\n"
+            f"Fact-level misses on researcher faults, runs: {misses.to_dict()} of "
+            f"{researcher.groupby('ftype').size().to_dict()}\n\n"
+            f"Dependency records per propagated run:\n{records.round(1).to_string()}")
+
+
+def unauthorized_sources(d: pd.DataFrame) -> str:
+    adv = d[d.fault_class == "adversarial"]
+    cells = adv.groupby(["stage", "ftype"]).faulty_unauthorized_action.agg(runs="sum", of="size")
+    return ("Unauthorized actions after adversarial faults, by cell. An executor redirect is itself the action "
+            f"and executors carry out injected plan steps, so those cells are 100% by construction:\n{cells.to_string()}")
+
+
 def shared_state(d: pd.DataFrame, tasks: dict[str, Task], out: Path) -> str:
     wrong = d[d.faulty_kv_wrong > 0]
-    path = 0
-    for r in wrong.itertuples():
-        trace, task = load_trace(out, r), tasks[r.task_id]
-        kv = trace["environment"]["kv"]
-        bad_keys = {f"kv:{k}" for k, v in task.expected.kv.items() if not _kv_match(kv.get(k), v)}
-        path += any(n["output"].get("tool") == "send_email" and not call_correct(task, n["output"])
-                    and bad_keys & {res for res, _ in n["reads"]}
-                    for n in trace["nodes"].values() if n["stage"] == "exec")
-    return (f"Shared state: {len(wrong)} runs store a wrong KV value without recovery; in {path} of them "
-            "an incorrect email was sent by an executor that read a wrong key.")
+    emails = pd.DataFrame([e | {"task_id": r.task_id} for r in wrong.itertuples()
+                           for e in wrong_state_emails(tasks[r.task_id], load_trace(out, r))])
+    return (f"Shared state: {len(wrong)} runs store a wrong KV value without recovery; {len(emails)} incorrect "
+            "emails were sent by an executor that read a wrong key. A read alone does not show the cause: "
+            f"{int(emails.cites_fault.sum())} also cite a corrupted fact, {int(emails.in_plan.sum())} have the wrong "
+            f"value in the plan's text for that step, and the read is the only visible source in at most "
+            f"{int(emails.read_only.sum())}.")
+
+
+def direct_state(tasks: dict[str, Task]) -> str:
+    out = RESULTS / "phase1_haiku_shared_state"
+    if not out.exists():
+        return ""
+    d = pd.read_csv(out / "runs.csv")
+    readers = pd.DataFrame([x | {"task_id": r.task_id} for r in d.itertuples()
+                            for x in state_fault_readers(tasks[r.task_id], load_trace(out, r))])
+    emails = readers[readers.tool == "send_email"]
+    split = emails.groupby("plan_states_value").agg(emails=("carried", "size"), carried=("carried", "sum"),
+                                                    correct=("correct", "sum"))
+    recall = {g: round(float(d[d.propagated][f"{g}_ds_recall"].mean()), 3) for g in GRAN}
+    return (f"Direct shared-state fault ({len(d)} runs corrupt a stored KV value; the plan and cited facts stay correct): "
+            f"{int(d.propagated.sum())} propagate. Emails reading the key: {len(emails)}, of which "
+            f"{int(emails.carried.sum())} carry the corrupted value and {int(emails.correct.sum())} are still correct.\n"
+            f"By whether the plan's text for the step also states the correct value:\n{split.to_string()}\n"
+            f"Recall on propagated runs: {recall}")
 
 
 def bootstrap_ci(sub: pd.DataFrame, values: pd.Series, n: int = 10000, seed: int = 0) -> np.ndarray:
@@ -90,26 +142,99 @@ def intervals(d: pd.DataFrame) -> str:
     return "\n".join(lines)
 
 
-def fact_misses(d: pd.DataFrame, tasks: dict[str, Task], out: Path) -> str:
+def miss_rows(d: pd.DataFrame, tasks: dict[str, Task], out: Path) -> pd.DataFrame:
     rows = []
     for r in d[d.fact_missed_units.notna()].itertuples():
         missed = r.fact_missed_units.split(";")
         wrong = missed_wrong_units(tasks[r.task_id], load_trace(out, r)["nodes"], missed)
         rows.append({"task_id": r.task_id, "stage": r.stage, "ftype": r.ftype, "fault_seed": r.fault_seed,
                      "applied": r.applied, "missed_units": r.fact_missed_units, "wrong_units": ";".join(wrong),
-                     "effect": "wrong result" if wrong else "no wrong result",
-                     "cause": MISS_CAUSE[r.ftype] if wrong else ""})
-    m = pd.DataFrame(rows)
+                     "effect": "wrong result" if wrong else "no wrong result"})
+    return pd.DataFrame(rows, columns=KEY + ["applied", "missed_units", "wrong_units", "effect"])
+
+
+def fact_misses(d: pd.DataFrame, tasks: dict[str, Task], out: Path) -> str:
+    m = miss_rows(d, tasks, out)
+    m["cause"] = [MISS_CAUSE[f] if e == "wrong result" else "" for f, e in zip(m.ftype, m.effect)]
     m.to_csv(out / "fact_misses.csv", index=False)
     n_prop = int(d.propagated.sum())
+    n_res = int((d.propagated & (d.stage == "research")).sum())
     n_wrong = int((m.effect == "wrong result").sum())
-    return (f"Fact-level misses: {len(m)} runs of {n_prop} propagated; {n_wrong} ({n_wrong / n_prop:.1%}) "
-            f"leave a wrong result, {len(m) - n_wrong} only change a signature (fact_misses.csv).\n"
+    return (f"Fact-level misses: {len(m)} runs of {n_prop} propagated; {n_wrong} ({n_wrong / n_prop:.1%}, "
+            f"{n_wrong / n_res:.1%} of the {n_res} propagated researcher faults) leave a wrong result, "
+            f"{len(m) - n_wrong} only change a signature (fact_misses.csv).\n"
             + m[m.effect == "wrong result"].groupby("cause").size().to_string())
 
 
+def sample_stats(out: Path, tasks: dict[str, Task]) -> dict[str, float]:
+    df = pd.read_csv(out / "runs.csv")
+    d = df[df.injected.astype(bool)].copy()
+    d["propagated"] = d.propagated.astype(bool)
+    meta = json.loads((out / "tasks.json").read_text(encoding="utf-8"))
+    p, bad = d[d.propagated], d.faulty_emails_unexpected + d.faulty_emails_incorrect
+    r = p[p.stage == "research"]
+    wrong = int((miss_rows(d, tasks, out).effect == "wrong result").sum())
+    return {"clean pass": sum(t["clean_success"] for t in meta["tasks"]), "fault runs": len(d),
+            "pass": d.faulty_success.astype(float).mean(), "propagated": len(p),
+            "unauthorized": d.faulty_unauthorized_action.astype(float).mean(), "wrong email": (bad > 0).mean(),
+            "stage recompute": p.stage_recompute_frac.mean(), "message recompute": p.message_recompute_frac.mean(),
+            "fact precision": p.fact_ds_precision.mean(), "fact recall": p.fact_ds_recall.mean(),
+            "fact miss runs": (p.fact_ds_under > 0).mean(), "fact recompute": p.fact_recompute_frac.mean(),
+            "researcher propagated": len(r), "researcher fact recall": r.fact_ds_recall.mean(),
+            "researcher fact miss runs": (r.fact_ds_under > 0).mean(),
+            "researcher wrong-result runs": wrong / len(r) if len(r) else 0.0}
+
+
+def repeats(tasks: dict[str, Task], out: Path) -> str:
+    """The first sample against independent samples of the whole matrix (no shared responses)."""
+    dirs = {"first": out} | {p.name.removeprefix("phase1_haiku_"): p
+                             for p in sorted(RESULTS.glob("phase1_haiku_repeat*"))}
+    if len(dirs) == 1:
+        return ""
+    stats = pd.DataFrame({name: sample_stats(p, tasks) for name, p in dirs.items()})
+    runs = [pd.read_csv(p / "runs.csv").set_index(KEY) for p in dirs.values()]
+    agree = {c: (pd.concat([r[c] for r in runs], axis=1).astype(str).nunique(axis=1) == 1).mean()
+             for c in ("faulty_success", "propagated", "faulty_unauthorized_action")}
+    return (f"Independent samples of the fault matrix:\n{stats.round(3).to_string()}\n"
+            "Cases where every sample gives the same outcome: "
+            + ", ".join(f"{k} {v:.1%}" for k, v in agree.items()))
+
+
+def live_baselines() -> str:
+    """Restart and verification with uncached calls, unlike the replayed baselines."""
+    out = RESULTS / "phase1_haiku_live"
+    if not out.exists():
+        return ""
+    d = pd.read_csv(out / "runs.csv")
+    meta = json.loads((out / "tasks.json").read_text(encoding="utf-8"))
+    n = len(d)
+    bad = d.faulty_emails_unexpected + d.faulty_emails_incorrect
+    state = ((d.faulty_missing_payments + d.faulty_extra_payments + d.faulty_kv_wrong + d.faulty_files_wrong) == 0)
+    rows = {
+        "no recovery": {"state_ok": state.sum(), "unauthorized": d.faulty_unauthorized_action.sum(), "wrong_email": (bad > 0).sum(),
+                        "cache_hits": d.faulty_cache_hits.sum()},
+        "full restart": {"state_ok": d.restart_state_ok.sum(), "unauthorized": d.restart_unauthorized.sum(),
+                         "wrong_email": (d.restart_unrecovered_emails > 0).sum(), "cache_hits": d.restart_cache_hits.sum(),
+                         "extra_tokens": (d.restart_tokens / d.clean_tokens).mean(),
+                         "median_s": d.restart_elapsed_s.median(), "max_s": d.restart_elapsed_s.max()},
+        "verify + retry": {"state_ok": d.verify_state_ok.sum(), "unauthorized": d.verify_unauthorized.sum(),
+                           "wrong_email": (d.verify_bad_emails > 0).sum(), "cache_hits": d.verify_cache_hits.sum(),
+                           "extra_tokens": (d.verify_overhead_tokens / d.clean_tokens).mean(),
+                           "median_s": d.verify_elapsed_s.median(), "max_s": d.verify_elapsed_s.max()},
+    }
+    clean = [t["clean_verify"] for t in meta["tasks"]]
+    return (f"Live baselines on Claude ({n} cases, restart and verification uncached; fault runs replayed; "
+            f"counts out of {n}):\n{pd.DataFrame(rows).T.round(2).to_string()}\n"
+            f"  verify: detected {int(d.verify_detected.sum())}/{n}, task success {int(d.verify_success.sum())}/{n}, "
+            f"flags on other outputs {int(d.verify_false_pos.sum())}/{int(d.verify_checked.sum())}\n"
+            f"  verify on clean runs: flags {sum(c['verify_false_pos'] for c in clean)}/{sum(c['verify_checked'] for c in clean)}, "
+            f"task success {sum(c['verify_success'] for c in clean)}/{len(clean)}, "
+            f"extra tokens {statistics.mean(c['verify_overhead_tokens'] / t['clean_tokens'] for c, t in zip(clean, meta['tasks'])):.2f}x, "
+            f"median {statistics.median(c['verify_elapsed_s'] for c in clean):.1f} s")
+
+
 def claude_timing() -> str:
-    meta = json.loads((ROOT / "results" / "phase1_haiku_latency" / "tasks.json").read_text(encoding="utf-8"))
+    meta = json.loads((RESULTS / "phase1_haiku_latency" / "tasks.json").read_text(encoding="utf-8"))
     rows = [(t["clean_units"], n) for t in meta["tasks"] for n in t["noise"]]
     times = [n["elapsed_s"] for _, n in rows]
     sizes = sorted({u for u, _ in rows})
@@ -122,13 +247,13 @@ def claude_timing() -> str:
 
 
 def live_timing() -> str:
-    pilot = ROOT / "results" / "phase1_triton_pilot"
+    pilot = RESULTS / "phase1_triton_pilot"
     meta = json.loads((pilot / "tasks.json").read_text(encoding="utf-8"))
     runs = pd.read_csv(pilot / "runs.csv")
     task = meta["tasks"][0]
-    repeats = [round(n["elapsed_s"], 1) for n in task["noise"]]
+    repeat_times = [round(n["elapsed_s"], 1) for n in task["noise"]]
     return (f"Live timing, campus pilot (no request spacing; {task['task_id']}, {task['clean_units']} units, s):\n"
-            f"  first clean run {task['clean_elapsed_s']:.1f}; uncached clean repeats {repeats}\n"
+            f"  first clean run {task['clean_elapsed_s']:.1f}; uncached clean repeats {repeat_times}\n"
             f"  restart median {statistics.median(runs.restart_elapsed_s):.2f}, "
             f"always-verify median {statistics.median(runs.verify_elapsed_s):.2f} (n={len(runs)})\n"
             "phase1_triton_validation_serial spaces requests by at least 1.25 s, so its timings mostly "
@@ -144,11 +269,13 @@ def main() -> None:
     clean = (f"Clean baseline: {sum(t['clean_success'] for t in meta['tasks'])}/{len(meta['tasks'])} runs pass; "
              f"uncached reruns {sum(n['success'] for n in noise)}/{len(noise)}.")
     affected = d.groupby("stage")[["affected_research", "affected_plan", "affected_exec"]].mean()
-    text = "\n\n".join([
+    sections = [
         clean,
         "Mean affected units by injection stage:\n" + affected.reindex(["research", "plan", "exec"]).round(2).to_string(),
-        by_class(d), shared_state(d, tasks, out), intervals(d), fact_misses(d, tasks, out), claude_timing(), live_timing(),
-    ]) + "\n"
+        by_class(d), by_entry_point(d, out), unauthorized_sources(d), shared_state(d, tasks, out), direct_state(tasks),
+        intervals(d), fact_misses(d, tasks, out), repeats(tasks, out), live_baselines(), claude_timing(), live_timing(),
+    ]
+    text = "\n\n".join(filter(None, sections)) + "\n"
     (out / "analysis.txt").write_text(text, encoding="utf-8")
     print(text)
 
