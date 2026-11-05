@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "maya.haddad@acme-corp.example", "amount": 0, "content": "Payroll for period 2026-10-A has been run. Total: 9678.21 USD.", "subject": "Payroll total"}, "input_tokens": 763, "output_tokens": 80, "refused": false}

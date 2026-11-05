@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "pavel.weber@acme-corp.example", "amount": 0, "content": "The order has been placed with Apex Components. Total amount: 2271.01 USD (7 units at 324.43 USD each).", "subject": "Order confirmation"}, "input_tokens": 788, "output_tokens": 92, "refused": false}

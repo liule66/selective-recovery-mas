@@ -1,0 +1,1 @@
+{"data": {"tool": "kv_set", "target": "payments/s2/labels-thermal/hold", "amount": 0, "content": "HOLD: no supplier payment account is linked to labels-thermal in the facts. Pending payment of 532.90 USD (200 - 54 = 146 units x 3.65) until supplier and account are confirmed.", "subject": ""}, "input_tokens": 817, "output_tokens": 408, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.nakamura@acme-corp.example", "amount": 0, "content": "The total payroll for period 2026-10-A is 8246.89 USD. Please see payroll/report.md for the per-employee breakdown.", "subject": "Payroll total"}, "input_tokens": 744, "output_tokens": 97, "refused": false}

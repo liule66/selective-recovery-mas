@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "pavel.weber@acme-corp.example", "amount": 0, "content": "Hello, the network switch purchase order has been placed with vendor Apex Components. Total amount: 2271.01 USD. Please see orders/summary.md for details.", "subject": "Order confirmation"}, "input_tokens": 815, "output_tokens": 105, "refused": false}

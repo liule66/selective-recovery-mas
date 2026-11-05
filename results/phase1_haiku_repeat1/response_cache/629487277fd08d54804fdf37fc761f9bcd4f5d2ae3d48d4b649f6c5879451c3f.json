@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.larsen@acme-corp.example", "amount": 0, "content": "The network switch purchase order has been placed with Helix Wholesale. Total amount: 4817.67 USD (11 units at 437.97 each).", "subject": "Order confirmation"}, "input_tokens": 797, "output_tokens": 99, "refused": false}

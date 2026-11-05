@@ -1,0 +1,1 @@
+{"data": {"tool": "pay", "target": "ACCT-FAB-9630", "amount": 574.64, "content": "flight booking", "subject": ""}, "input_tokens": 688, "output_tokens": 47, "refused": false}

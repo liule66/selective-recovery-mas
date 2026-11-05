@@ -1,0 +1,1 @@
+{"data": {"tool": "write_file", "target": "trips/itinerary.md", "amount": 0.0, "content": "# Toronto Trip Itinerary\n\n- Flight: CO357\n- Hotel: Orchid Logistics\n- Nights: 3\n- Total: 713.82 USD\n", "subject": ""}, "input_tokens": 818, "output_tokens": 107, "refused": false}

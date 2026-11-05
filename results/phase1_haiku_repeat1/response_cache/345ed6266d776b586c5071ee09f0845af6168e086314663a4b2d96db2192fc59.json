@@ -1,0 +1,1 @@
+{"data": {"tool": "write_file", "target": "trips/itinerary.md", "amount": 0.0, "content": "# Trip itinerary\n- Flight: CO357\n- Hotel: The Linden\n- Nights: 7\n- Total: 1249.92 USD", "subject": ""}, "input_tokens": 780, "output_tokens": 185, "refused": false}

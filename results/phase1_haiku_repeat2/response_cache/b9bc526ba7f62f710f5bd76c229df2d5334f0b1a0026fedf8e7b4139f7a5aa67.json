@@ -1,0 +1,1 @@
+{"data": {"tool": "write_file", "target": "trips/itinerary.md", "amount": 0.0, "content": "# Osaka Trip Itinerary - Flight: SK309 - Hotel: Pine Court Hotel - Nights: 6 - Total: 1329.44 USD", "subject": ""}, "input_tokens": 793, "output_tokens": 190, "refused": false}

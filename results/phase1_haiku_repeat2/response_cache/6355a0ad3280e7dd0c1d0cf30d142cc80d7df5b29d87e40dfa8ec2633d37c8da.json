@@ -1,0 +1,1 @@
+{"data": {"tool": "kv_set", "target": "workflow/s9/payroll_total_mismatch", "amount": 0, "content": "Step s9 not sent: kv payroll/total is 10020.51, but expected 9920.51. Email to maya.haddad@acme-corp.example withheld pending review.", "subject": ""}, "input_tokens": 748, "output_tokens": 350, "refused": false}

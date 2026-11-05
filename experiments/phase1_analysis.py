@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from srmas.analysis.misses import missed_wrong_units, state_fault_readers, wrong_state_emails  # noqa: E402
-from srmas.tasks.base import Task  # noqa: E402
+from srmas.tasks.base import ACCOUNT_RE, Task  # noqa: E402
 from srmas.tasks.templates import make_suite  # noqa: E402
 
 GRAN = ["stage", "message", "fact"]
@@ -112,14 +112,16 @@ def direct_state(tasks: dict[str, Task]) -> str:
     d = pd.read_csv(out / "runs.csv")
     readers = pd.DataFrame([x | {"task_id": r.task_id} for r in d.itertuples()
                             for x in state_fault_readers(tasks[r.task_id], load_trace(out, r))])
-    emails = readers[readers.tool == "send_email"]
-    split = emails.groupby("plan_states_value").agg(emails=("carried", "size"), carried=("carried", "sum"),
-                                                    correct=("correct", "sum"))
+    emails = readers[readers.tool == "send_email"].copy()
+    # An email that flags the mismatch states both values, so it also passes the checker.
+    emails["outcome"] = [("states both values" if ok else "sent the corrupted value") if carried
+                         else ("kept the correct value" if ok else "other wrong value")
+                         for carried, ok in zip(emails.carried, emails.correct)]
+    split = pd.crosstab(emails.plan_states_value, emails.outcome)
     recall = {g: round(float(d[d.propagated][f"{g}_ds_recall"].mean()), 3) for g in GRAN}
     return (f"Direct shared-state fault ({len(d)} runs corrupt a stored KV value; the plan and cited facts stay correct): "
-            f"{int(d.propagated.sum())} propagate. Emails reading the key: {len(emails)}, of which "
-            f"{int(emails.carried.sum())} carry the corrupted value and {int(emails.correct.sum())} are still correct.\n"
-            f"By whether the plan's text for the step also states the correct value:\n{split.to_string()}\n"
+            f"{int(d.propagated.sum())} propagate; {len(emails)} emails read the key.\n"
+            f"Email outcome, by whether the plan's text for the step also states the correct value:\n{split.to_string()}\n"
             f"Recall on propagated runs: {recall}")
 
 
@@ -166,6 +168,20 @@ def fact_misses(d: pd.DataFrame, tasks: dict[str, Task], out: Path) -> str:
             + m[m.effect == "wrong result"].groupby("cause").size().to_string())
 
 
+def fabricated_steps(d: pd.DataFrame, out: Path) -> tuple[int, int]:
+    """A plan-level fabricated step keeps the copied instruction. Returns the runs where that
+    instruction names an account, and the runs where naming one coincides with overpaying."""
+    named = matching = 0
+    for r in d[(d.stage == "plan") & (d.ftype == "fabricated")].itertuples():
+        trace = load_trace(out, r)
+        step_id = trace["origin"]["steps"][0]
+        step = next(s for s in trace["nodes"]["plan"]["output"] if s["step_id"] == step_id)
+        names = bool(ACCOUNT_RE.search(step["instruction"]))
+        named += names
+        matching += names == (r.faulty_overpaid > 0)
+    return named, matching
+
+
 def sample_stats(out: Path, tasks: dict[str, Task]) -> dict[str, float]:
     df = pd.read_csv(out / "runs.csv")
     d = df[df.injected.astype(bool)].copy()
@@ -174,9 +190,20 @@ def sample_stats(out: Path, tasks: dict[str, Task]) -> dict[str, float]:
     p, bad = d[d.propagated], d.faulty_emails_unexpected + d.faulty_emails_incorrect
     r = p[p.stage == "research"]
     wrong = int((miss_rows(d, tasks, out).effect == "wrong result").sum())
+    unauthorized = d.faulty_unauthorized_action.astype(float)
+    cell = lambda stage, ftype: (d.stage == stage) & (d.ftype == ftype)  # noqa: E731
+    named, matching = fabricated_steps(d, out)
     return {"clean pass": sum(t["clean_success"] for t in meta["tasks"]), "fault runs": len(d),
             "pass": d.faulty_success.astype(float).mean(), "propagated": len(p),
-            "unauthorized": d.faulty_unauthorized_action.astype(float).mean(), "wrong email": (bad > 0).mean(),
+            "unauthorized": unauthorized.mean(), "wrong email": (bad > 0).mean(),
+            "unauthorized adversarial": unauthorized[d.fault_class == "adversarial"].mean(),
+            "unauthorized accidental": unauthorized[d.fault_class == "accidental"].mean(),
+            "researcher redirect unauthorized": unauthorized[cell("research", "malicious_redirect")].mean(),
+            "researcher injection unauthorized": unauthorized[cell("research", "injected_instruction")].mean(),
+            "planner wrong/redirect propagated": int(d.propagated[cell("plan", "wrong_value") | cell("plan", "malicious_redirect")].sum()),
+            "planner fabricated, real payee overpaid": int((d.faulty_overpaid[cell("plan", "fabricated")] > 0).sum()),
+            "planner fabricated, instruction names an account": named,
+            "planner fabricated, overpaid iff it names one": matching,
             "stage recompute": p.stage_recompute_frac.mean(), "message recompute": p.message_recompute_frac.mean(),
             "fact precision": p.fact_ds_precision.mean(), "fact recall": p.fact_ds_recall.mean(),
             "fact miss runs": (p.fact_ds_under > 0).mean(), "fact recompute": p.fact_recompute_frac.mean(),
@@ -193,11 +220,19 @@ def repeats(tasks: dict[str, Task], out: Path) -> str:
         return ""
     stats = pd.DataFrame({name: sample_stats(p, tasks) for name, p in dirs.items()})
     runs = [pd.read_csv(p / "runs.csv").set_index(KEY) for p in dirs.values()]
+    clean = [(t["clean_success"], t.get("noise", [])) for p in dirs.values()
+             for t in json.loads((p / "tasks.json").read_text(encoding="utf-8"))["tasks"]]
+    latency = json.loads((RESULTS / "phase1_haiku_latency" / "tasks.json").read_text(encoding="utf-8"))
+    current = [ok for ok, _ in clean] + [n["success"] for t in latency["tasks"] for n in t["noise"]]
+    original = [n["success"] for _, noise in clean for n in noise]
     agree = {c: (pd.concat([r[c] for r in runs], axis=1).astype(str).nunique(axis=1) == 1).mean()
              for c in ("faulty_success", "propagated", "faulty_unauthorized_action")}
     return (f"Independent samples of the fault matrix:\n{stats.round(3).to_string()}\n"
             "Cases where every sample gives the same outcome: "
-            + ", ".join(f"{k} {v:.1%}" for k, v in agree.items()))
+            + ", ".join(f"{k} {v:.1%}" for k, v in agree.items())
+            + f"\nClean runs under the current checker, over all samples and uncached reruns: {sum(current)}/{len(current)} "
+            f"pass. Another {sum(original)}/{len(original)} passed the original checker, which is looser; their traces "
+            "were not kept, so they cannot be re-scored.")
 
 
 def live_baselines() -> str:

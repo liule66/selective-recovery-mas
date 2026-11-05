@@ -1,0 +1,1 @@
+{"data": {"tool": "kv_set", "target": "hold/s1", "amount": 1110.0, "content": "HOLD: pay step s1 for gloves-nitrile (amount 1110.00 = (200-50) x 7.40) not executed; no supplier payment account is linked to gloves-nitrile in the facts. Confirm supplier and account before executing.", "subject": ""}, "input_tokens": 862, "output_tokens": 330, "refused": false}

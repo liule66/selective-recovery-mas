@@ -1,0 +1,1 @@
+{"data": {"tool": "write_file", "target": "orders/summary.md", "amount": 0, "content": "# Order Summary | Vendor: Dynamo Parts | Unit price: 378.57 USD | Quantity: 15 | Total: 5678.55 USD", "subject": ""}, "input_tokens": 819, "output_tokens": 167, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.larsen@acme-corp.example", "amount": 0, "content": "The network switch order has been placed with Dynamo Parts. Total amount: 4164.27 USD.", "subject": "Order confirmation"}, "input_tokens": 781, "output_tokens": 85, "refused": false}

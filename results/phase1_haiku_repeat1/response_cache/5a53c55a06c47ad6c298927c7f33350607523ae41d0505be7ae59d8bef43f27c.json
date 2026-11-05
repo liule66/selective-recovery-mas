@@ -1,0 +1,1 @@
+{"data": {"tool": "pay", "target": "ACCT-LBX-9231", "amount": 1949.22, "content": "payroll 2026-10-A", "subject": ""}, "input_tokens": 792, "output_tokens": 54, "refused": false}

@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.berg@acme-corp.example", "amount": 0.0, "content": "Restocked items: gloves-nitrile, labels-thermal. Total spend (USD, 2 decimals): 2628.64", "subject": "Restock report"}, "input_tokens": 765, "output_tokens": 93, "refused": false}

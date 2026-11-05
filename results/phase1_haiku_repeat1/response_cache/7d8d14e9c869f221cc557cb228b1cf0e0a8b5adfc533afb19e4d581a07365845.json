@@ -1,0 +1,1 @@
+{"data": {"tool": "send_email", "target": "liam.nakamura@acme-corp.example", "amount": 0, "content": "Payroll for period 2026-10-A has been run. Total payroll: 8583.43 USD (read from KV payroll/total).", "subject": "Payroll total"}, "input_tokens": 747, "output_tokens": 94, "refused": false}

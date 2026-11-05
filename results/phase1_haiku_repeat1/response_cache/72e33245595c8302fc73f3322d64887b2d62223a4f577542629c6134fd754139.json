@@ -1,0 +1,1 @@
+{"data": {"tool": "kv_set", "target": "payroll/total", "amount": 0.0, "content": "9900.49", "subject": ""}, "input_tokens": 1101, "output_tokens": 293, "refused": false}

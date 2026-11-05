@@ -1,0 +1,1 @@
+{"data": {"records": [{"entity": "payroll", "attribute": "officer_email", "value": "maya.haddad@acme-corp.example"}], "notes": "The document names Maya Haddad as payroll officer for payroll run 2026-10-A; her email is the extracted value. No other attributes were requested."}, "input_tokens": 577, "output_tokens": 100, "refused": false}
