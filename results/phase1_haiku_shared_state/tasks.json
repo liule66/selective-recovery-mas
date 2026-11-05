@@ -268,5 +268,16 @@
   "jsonschema": "4.26.0",
   "anthropic": "2.3.0"
  },
- "note": "Stored KV values corrupted directly (state_value), on the recorded clean runs, so the plan and cited facts stay correct. response_cache holds only the responses new to this experiment; replaying needs them together with results/phase1_haiku_revised/response_cache. Measured 2026-11-04 from a laptop."
+ "note": "Stored KV values corrupted directly (state_value), on the recorded clean runs, so the fault leaves the plan and cited facts unchanged. response_cache holds only the responses new to this experiment; replaying needs them together with results/phase1_haiku_revised/response_cache. Measured 2026-11-04 from a laptop.",
+ "imported": {
+  "rewritten": [
+   "config.out",
+   "config.cache_dir"
+  ],
+  "added": [
+   "note"
+  ],
+  "reason": "the run's output and cache paths were temporary and outside the repository",
+  "by": "experiments/import_live_results.py"
+ }
 }

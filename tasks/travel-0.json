@@ -140,11 +140,13 @@
   "payments": [
    [
     "ACCT-CJX-9203",
-    484.05
+    484.05,
+    "flight booking"
    ],
    [
     "ACCT-TLX-5470",
-    328.23
+    328.23,
+    "hotel booking"
    ]
   ],
   "kv": {

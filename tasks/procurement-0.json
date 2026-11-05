@@ -104,7 +104,8 @@
   "payments": [
    [
     "ACCT-ACX-1341",
-    2271.01
+    2271.01,
+    "purchase order"
    ]
   ],
   "kv": {

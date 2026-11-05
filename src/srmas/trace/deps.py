@@ -10,6 +10,7 @@ they imply, given where a fault entered.
 
 from __future__ import annotations
 
+import copy
 import json
 from collections import defaultdict
 from typing import Any
@@ -75,6 +76,18 @@ def predict(trace: Trace, granularity: str) -> set[str]:
         execs = {f"exec:{sid}" for sid in origin.get("steps", [])}
         return {"plan"} | _closure({e for e in execs if e in trace.nodes}, state_kids)
     return _closure({unit}, state_kids)
+
+
+def predict_fact_unit_oracle(trace: Trace) -> set[str]:
+    """The fact policy told only which unit is faulty.
+
+    `predict(trace, "fact")` also reads which facts or plan steps inside that unit were corrupted,
+    a finer oracle than the faulty result's identity. Here every fact or step of the unit is suspect.
+    """
+    coarse = copy.copy(trace)
+    unit = trace.origin["unit"]
+    coarse.origin = {"unit": unit, "facts": trace.nodes[unit].produces_facts, "steps": list(trace.step_facts)}
+    return predict(coarse, "fact")
 
 
 def bookkeeping(trace: Trace, granularity: str) -> dict[str, int]:

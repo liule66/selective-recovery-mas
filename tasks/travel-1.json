@@ -140,11 +140,13 @@
   "payments": [
    [
     "ACCT-SAX-1731",
-    574.64
+    574.64,
+    "flight booking"
    ],
    [
     "ACCT-PCH-3716",
-    754.8
+    754.8,
+    "hotel booking"
    ]
   ],
   "kv": {

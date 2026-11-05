@@ -268,5 +268,16 @@
   "jsonschema": "4.26.0",
   "anthropic": "2.3.0"
  },
- "note": "An independent sample of the fault matrix: a fresh response cache shares no responses with results/phase1_haiku_revised. Always-verify is skipped. Restart replays this sample's clean run, so its traces are not kept. Measured 2026-11-04 from a laptop."
+ "note": "An independent sample of the fault matrix: a fresh response cache shares no responses with results/phase1_haiku_revised. Always-verify is skipped. Restart replays this sample's clean run, so its traces are not kept. Measured 2026-11-04 from a laptop.",
+ "imported": {
+  "rewritten": [
+   "config.out",
+   "config.cache_dir"
+  ],
+  "added": [
+   "note"
+  ],
+  "reason": "the run's output and cache paths were temporary and outside the repository",
+  "by": "experiments/import_live_results.py"
+ }
 }
